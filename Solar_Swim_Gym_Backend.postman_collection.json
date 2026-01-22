@@ -1,0 +1,354 @@
+{
+	"info": {
+		"_postman_id": "a6b9c8d7-e0f1-4a2b-9c3d-e4f5a6b7c8d9",
+		"name": "Solar Swim Gym Backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"parent@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Onboarding",
+			"item": [
+				{
+					"name": "Complete Onboarding",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"primary_profile\": {\n        \"first_name\": \"John\",\n        \"last_name\": \"Doe\",\n        \"email\": \"john.doe@example.com\",\n        \"password\": \"securepassword\",\n        \"mobile\": \"1234567890\",\n        \"date_of_birth\": \"1985-05-20\",\n        \"rceb_flag\": true,\n        \"case_manager\": {\n            \"name\": \"Jane Smith\",\n            \"email\": \"jane.smith@rceb.org\"\n        }\n    },\n    \"family_members\": [\n        {\n            \"first_name\": \"Little\",\n            \"last_name\": \"Doe\",\n            \"date_of_birth\": \"2015-08-10\",\n            \"email\": \"\",\n            \"rceb_flag\": true,\n            \"services\": []\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/onboarding/complete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"onboarding",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Activation",
+			"item": [
+				{
+					"name": "Validate Token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/activation/validate/:token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"activation",
+								"validate",
+								":token"
+							],
+							"variable": [
+								{
+									"key": "token",
+									"value": "your_token_here"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Profile",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"your_token_here\",\n    \"password\": \"new_secure_password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/activation/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"activation",
+								"activate"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profiles",
+			"item": [
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/profiles/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profiles",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Family Profiles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/profiles/family",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profiles",
+								"family"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Services",
+			"item": [
+				{
+					"name": "Get All Services",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/services",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"services"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Upsert Service Plan",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service_id\": \"uuid-here\",\n    \"subscription_type_id\": \"uuid-here\",\n    \"price\": 100,\n    \"age_group\": \"4-6\",\n    \"funding_type\": \"SELF\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/service-plans",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"service-plans"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subscription Type",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type_name\": \"Monthly\",\n    \"billing_interval_unit\": \"month\",\n    \"billing_interval_count\": 1,\n    \"auto_renew\": true,\n    \"generates_invoices\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/subscription-types",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"subscription-types"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Billing",
+			"item": [
+				{
+					"name": "Subscribe",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"accountId\": \"uuid-account\",\n    \"profileId\": \"uuid-profile\",\n    \"servicePlanId\": \"uuid-plan\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/billing/subscribe",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"billing",
+								"subscribe"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Invoices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/billing/invoices/pending/:accountId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"billing",
+								"invoices",
+								"pending",
+								":accountId"
+							],
+							"variable": [
+								{
+									"key": "accountId",
+									"value": "uuid-account"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
