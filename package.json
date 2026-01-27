@@ -7,14 +7,19 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "npx ts-node src/app.ts",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "npx ts-node src/scripts/test-e2e.ts",
+    "test:search": "npx ts-node src/scripts/test-search.ts",
+    "db:clear": "npx ts-node src/scripts/clear-db.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@elastic/elasticsearch": "^9.2.0",
     "@supabase/supabase-js": "^2.90.1",
+    "@types/nodemailer": "^7.0.9",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -22,6 +27,7 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^7.0.12",
     "supertest": "^7.2.2",
     "zod": "^4.3.5"
   },

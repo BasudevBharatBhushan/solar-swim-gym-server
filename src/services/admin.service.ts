@@ -1,6 +1,7 @@
 import { supabase } from "../config/supabase";
 import { AppError } from "../middleware/error";
 import { SubscriptionType, ServicePlan } from "../types/billing.types";
+import { searchProfiles as esSearchProfiles, searchAccounts as esSearchAccounts } from "../config/elasticsearch";
 
 export const createSubscriptionType = async (
   type: Partial<SubscriptionType>
@@ -42,35 +43,12 @@ export const upsertServicePlan = async (
 export const createServicePlan = async (
   plan: Partial<ServicePlan>
 ): Promise<ServicePlan> => {
-  // Auto-generate plan_name if not provided
-  if (!plan.plan_name && plan.service_id && plan.subscription_type_id) {
-    // Fetch service name
-    const { data: service } = await supabase
-      .from("services")
-      .select("service_name")
-      .eq("service_id", plan.service_id)
-      .single();
-
-    // Fetch subscription type name
-    const { data: subscriptionType } = await supabase
-      .from("subscription_types")
-      .select("type_name")
-      .eq("subscription_type_id", plan.subscription_type_id)
-      .single();
-
-    if (service && subscriptionType) {
-      // Generate plan name: "Service Name - Subscription Type - Age Group - Funding Type"
-      const parts = [service.service_name, subscriptionType.type_name];
-      if (plan.age_group) parts.push(plan.age_group);
-      if (plan.funding_type) parts.push(plan.funding_type);
-      plan.plan_name = parts.join(" - ");
-    }
-  }
-
   // Set default currency if not provided
   if (!plan.currency) {
     plan.currency = "USD";
   }
+
+  console.log('[DEBUG] createServicePlan called with:', JSON.stringify(plan, null, 2));
 
   const { data, error } = await supabase
     .from("service_plans")
@@ -79,9 +57,11 @@ export const createServicePlan = async (
     .single();
 
   if (error) {
+    console.log('[DEBUG] Supabase error:', JSON.stringify(error, null, 2));
     throw new AppError(`Failed to create service plan: ${error.message}`, 500);
   }
 
+  console.log('[DEBUG] Service plan created:', JSON.stringify(data, null, 2));
   return data as unknown as ServicePlan;
 };
 
@@ -125,3 +105,146 @@ export const getAllServicePlans = async () => {
   }
   return data;
 };
+
+/**
+ * Create a new membership plan
+ */
+export const createMembershipPlan = async (plan: any) => {
+  const { data, error } = await supabase
+    .from("membership_plans")
+    .insert(plan)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(`Failed to create membership plan: ${error.message}`, 500);
+  }
+
+  return data;
+};
+
+/**
+ * Update an existing membership plan
+ */
+export const updateMembershipPlan = async (membershipPlanId: string, updates: any) => {
+  const { data, error } = await supabase
+    .from("membership_plans")
+    .update(updates)
+    .eq("membership_plan_id", membershipPlanId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(`Failed to update membership plan: ${error.message}`, 500);
+  }
+
+  if (!data) {
+    throw new AppError("Membership plan not found", 404);
+  }
+
+  return data;
+};
+
+/**
+ * Get all membership plans
+ */
+export const getAllMembershipPlans = async () => {
+  const { data, error } = await supabase
+    .from("membership_plans")
+    .select(`
+      *,
+      membership:memberships(*),
+      subscription_type:subscription_types(*)
+    `);
+    
+  if (error) {
+    throw new AppError(`Failed to fetch membership plans: ${error.message}`, 500);
+  }
+  
+  return data;
+};
+
+/**
+ * Create a new service
+ */
+export const createService = async (service: any) => {
+  const { data, error } = await supabase
+    .from("services")
+    .insert(service)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(`Failed to create service: ${error.message}`, 500);
+  }
+
+  return data;
+};
+
+/**
+ * Get all services (Admin)
+ */
+export const getAllServices = async () => {
+  const { data, error } = await supabase.from("services").select("*");
+  if (error) {
+    throw new AppError(`Failed to fetch services: ${error.message}`, 500);
+  }
+  return data;
+};
+
+/**
+ * Create a new membership
+ */
+export const createMembership = async (membership: any) => {
+  const { data, error } = await supabase
+    .from("memberships")
+    .insert(membership)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(`Failed to create membership: ${error.message}`, 500);
+  }
+
+  return data;
+};
+
+/**
+ * Get all memberships (Admin)
+ */
+export const getAllMemberships = async () => {
+  const { data, error } = await supabase.from("memberships").select("*");
+  if (error) {
+    throw new AppError(`Failed to fetch memberships: ${error.message}`, 500);
+  }
+  return data;
+};
+
+/**
+ * Audit / Search Profiles with Elasticsearch
+ */
+export const searchProfiles = async (
+  query: string,
+  page: number = 1,
+  limit: number = 10,
+  sortBy: string = 'created_at',
+  sortOrder: 'asc' | 'desc' = 'desc'
+) => {
+  const from = (page - 1) * limit;
+  return await esSearchProfiles(query, from, limit, sortBy, sortOrder);
+};
+
+/**
+ * Audit / Search Accounts with Elasticsearch
+ */
+export const searchAccounts = async (
+  query: string,
+  page: number = 1,
+  limit: number = 10,
+  sortBy: string = 'created_at',
+  sortOrder: 'asc' | 'desc' = 'desc'
+) => {
+  const from = (page - 1) * limit;
+  return await esSearchAccounts(query, from, limit, sortBy, sortOrder);
+};
+

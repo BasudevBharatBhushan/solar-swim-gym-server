@@ -9,6 +9,10 @@ import activationRoutes from "./routes/activation.routes";
 import onboardingRoutes from "./routes/onboarding.routes";
 import billingRoutes from "./routes/billing.routes";
 import adminRoutes from "./routes/admin.routes";
+import subscriptionRoutes from "./routes/subscription.routes";
+import legalRoutes from "./routes/legal.routes";
+import leadsRoutes from "./routes/leads.routes";
+import debugRoutes from "./routes/debug.routes";
 import { errorHandler } from "./middleware/error";
 
 dotenv.config();
@@ -29,6 +33,12 @@ app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/billing", billingRoutes);
+app.use("/api/v1/subscriptions", subscriptionRoutes);
+app.use("/api/v1/legal", legalRoutes);
+app.use("/api/v1/leads", leadsRoutes);
+app.use("/api/v1/debug", debugRoutes);
+
+
 
 // Health Check
 app.get("/", (req, res) => {

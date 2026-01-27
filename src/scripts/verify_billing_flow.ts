@@ -56,10 +56,12 @@ const runVerification = async () => {
     const servicePlan = await createServicePlan({
         service_id: service.service_id,
         subscription_type_id: subType.subscription_type_id,
-        plan_name: 'Test Monthly Plan',
-        price: 99.99
+        age_group: 'adult',
+        funding_type: 'private',
+        price: 99.99,
+        currency: 'USD'
     });
-    console.log(`   - Service Plan Created: ${servicePlan.plan_name} ($${servicePlan.price})`);
+    console.log(`   - Service Plan Created: ${servicePlan.service_plan_id} ($${servicePlan.price});`);
 
     // 3. Create Subscription
     console.log('3. Creating Subscription...');

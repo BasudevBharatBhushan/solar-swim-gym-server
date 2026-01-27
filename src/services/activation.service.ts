@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 export const validateToken = async (token: string) => {
   const { data, error } = await supabase
     .from('profile_activation_tokens')
-    .select('profile:profile_id(email, profile_id), expires_at, used')
+    .select('*, account:accounts(email, account_id)')
     .eq('token', token)
     .single();
 
@@ -13,7 +13,7 @@ export const validateToken = async (token: string) => {
     throw new AppError('Invalid token', 400);
   }
 
-  if (data.used) {
+  if (data.is_used) {
     throw new AppError('Token already used', 400);
   }
 
@@ -21,15 +21,12 @@ export const validateToken = async (token: string) => {
     throw new AppError('Token expired', 400);
   }
 
-  // data.profile is an array or object depending on relationship.
-  // Since it is 1:1 or N:1, it should be an object if single() worked on the join.
-  // Actually Supabase returns nested object for single relation.
-  const profile = data.profile as any; // Cast to avoid TS complexity for now
+  const account = data.account as any;
 
   return {
     valid: true,
-    profile_id: profile.profile_id,
-    email: profile.email,
+    account_id: account.account_id,
+    email: account.email
   };
 };
 
@@ -37,7 +34,7 @@ export const activateProfile = async (token: string, password: string) => {
   // 1. Validate token again
   const { data: tokenData, error: tokenError } = await supabase
     .from('profile_activation_tokens')
-    .select('profile_id, expires_at, used')
+    .select('account_id, expires_at, is_used')
     .eq('token', token)
     .single();
 
@@ -45,7 +42,7 @@ export const activateProfile = async (token: string, password: string) => {
     throw new AppError('Invalid token', 400);
   }
 
-  if (tokenData.used) {
+  if (tokenData.is_used) {
     throw new AppError('Token already used', 400);
   }
 
@@ -57,29 +54,24 @@ export const activateProfile = async (token: string, password: string) => {
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
-  // 3. Update Profile & Token
-  // Should be atomic if possible, but separate calls ok for now. 
-  // Better: RPC or carefully ordered. 
-  // We'll update profile first, then token.
+  // 3. Update Account & Token
+  const { error: updateAccountError } = await supabase
+    .from('accounts')
+    .update({ password_hash: passwordHash, status: 'active' } as any)
+    .eq('account_id', tokenData.account_id);
 
-  const { error: updateProfileError } = await supabase
-    .from('profiles')
-    .update({ password_hash: passwordHash, is_active: true } as any)
-    .eq('profile_id', tokenData.profile_id);
-
-  if (updateProfileError) {
-    throw new AppError('Could not activate profile', 500);
+  if (updateAccountError) {
+    throw new AppError('Could not activate account', 500);
   }
 
   const { error: updateTokenError } = await supabase
     .from('profile_activation_tokens')
-    .update({ used: true } as any)
+    .update({ is_used: true } as any)
     .eq('token', token);
 
   if (updateTokenError) {
-    // Critical error: Profile activated but token not marked used.
-    // In real app, log urgency.
-    console.error('CRITICAL: Token not marked used after activation', token);
+    // Critical error: Account activated but token not marked used.
+    console.error('CRITICAL: Token not marked is_used after activation', token);
   }
 
   return { success: true };

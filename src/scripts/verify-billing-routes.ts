@@ -54,12 +54,11 @@ async function verifyBillingRoutes() {
     const servicePlan = {
       service_id: '061c0df8-c1b1-4395-9c02-84d394545010', // From user image/mock
       subscription_type_id: monthlyTypeId,
-      plan_name: 'PLAN.SWIM101.MONTHLY.4_6.SELF',
       price: 100.00,
       currency: 'USD',
       is_active: true,
-      age_group: '4-6',
-      funding_type: 'SELF'
+      age_group: 'child',
+      funding_type: 'private'
     };
 
     const resPlan = await axios.post(`${API_URL}/service-plans`, servicePlan);

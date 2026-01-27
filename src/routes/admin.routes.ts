@@ -3,16 +3,32 @@ import * as adminController from "../controllers/admin.controller";
 
 const router = Router();
 
-// POST /api/admin/subscription-types
+// Subscription Types
 router.post("/subscription-types", adminController.createSubscriptionType);
-
-// GET all subscription types
 router.get("/subscription-types", adminController.getAllSubscriptionTypes);
-// GET all service plans
+
+// Services
+router.post("/services", adminController.createService);
+router.get("/services", adminController.getAllServices);
+
+// Memberships
+router.post("/memberships", adminController.createMembership);
+router.get("/memberships", adminController.getAllMemberships);
+
+
+// Service Plans
 router.get("/service-plans", adminController.getAllServicePlans);
-// POST create service plan
 router.post("/service-plans", adminController.createServicePlan);
-// PATCH update service plan
 router.patch("/service-plans/:id", adminController.updateServicePlan);
 
+// Membership Plans
+router.get("/membership-plans", adminController.getAllMembershipPlans);
+router.post("/membership-plans", adminController.createMembershipPlan);
+router.patch("/membership-plans/:id", adminController.updateMembershipPlan);
+
+// Search
+router.get("/profiles", adminController.getProfiles);
+router.get("/accounts", adminController.getAccounts);
+
 export default router;
+

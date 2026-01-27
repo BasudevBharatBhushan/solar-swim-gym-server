@@ -22,7 +22,6 @@ export interface ServicePlan {
   service_plan_id: string;
   service_id: string;
   subscription_type_id: string;
-  plan_name: string;
   price: number;
   currency: string;
   is_active: boolean;
@@ -37,7 +36,10 @@ export interface Subscription {
   subscription_id: string;
   account_id: string;
   profile_id: string;
-  service_plan_id: string;
+  service_plan_id?: string;
+  membership_plan_id?: string;
+  subscription_kind: 'MEMBERSHIP' | 'ADDON';
+  invoice_id: string;
   status: SubscriptionStatus;
   current_period_start: string; // ISO Date string
   current_period_end: string;   // ISO Date string
@@ -49,7 +51,6 @@ export interface Subscription {
 
 export interface Invoice {
   invoice_id: string;
-  subscription_id: string;
   account_id: string;
   billing_period_start: string;
   billing_period_end: string;
