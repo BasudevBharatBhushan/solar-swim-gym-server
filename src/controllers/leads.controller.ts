@@ -14,14 +14,14 @@ export const getAllLeads = async (req: Request, res: Response, next: NextFunctio
     const source = req.query.source as string;
     const useElasticsearch = req.query.useElasticsearch === 'true';
 
+    // Reindex all leads when searching all (empty query) to ensure data is fresh
+    if (!search || search.trim() === '') {
+      await leadsService.syncAllLeadsToElasticsearch();
+    }
+
     let result;
 
     if (useElasticsearch) {
-      // Index everything ONLY when search is empty as requested, to avoid slowing down specific searches
-      if (!search || search.trim() === '') {
-        await leadsService.syncAllLeadsToElasticsearch();
-      }
-
       // Use Elasticsearch for search
       result = await leadsService.searchLeadsWithElasticsearch(search || '', page, limit);
     } else {

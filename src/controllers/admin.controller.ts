@@ -146,21 +146,14 @@ export const getProfiles = async (req: Request, res: Response, next: NextFunctio
     const limit = parseInt(req.query.limit as string) || 10;
     const sortBy = (req.query.sortBy as string) || 'created_at';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 'asc' : 'desc';
-    const useElasticsearch = req.query.useElasticsearch === 'true';
 
-    if (useElasticsearch) {
-      if (!q || q.trim() === '') {
-        await adminService.syncAllProfilesToElasticsearch();
-      }
-      const result = await adminService.searchProfiles(q, page, limit, sortBy, sortOrder);
-      res.status(200).json(result);
-    } else {
-      // Logic for non-elasticsearch (Supabase direct search) could be added here
-      // For now, let's keep it as is or handle it if needed.
-      // Assuming searchProfiles currently ONLY uses ES.
-      const result = await adminService.searchProfiles(q, page, limit, sortBy, sortOrder);
-      res.status(200).json(result);
+    // Reindex all profiles when searching all (empty query) to ensure data is fresh
+    if (!q || q.trim() === '') {
+      await adminService.syncAllProfilesToElasticsearch();
     }
+
+    const result = await adminService.searchProfiles(q, page, limit, sortBy, sortOrder);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
@@ -177,18 +170,14 @@ export const getAccounts = async (req: Request, res: Response, next: NextFunctio
     const limit = parseInt(req.query.limit as string) || 10;
     const sortBy = (req.query.sortBy as string) || 'created_at';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 'asc' : 'desc';
-    const useElasticsearch = req.query.useElasticsearch === 'true';
 
-    if (useElasticsearch) {
-      if (!q || q.trim() === '') {
-        await adminService.syncAllAccountsToElasticsearch();
-      }
-      const result = await adminService.searchAccounts(q, page, limit, sortBy, sortOrder);
-      res.status(200).json(result);
-    } else {
-      const result = await adminService.searchAccounts(q, page, limit, sortBy, sortOrder);
-      res.status(200).json(result);
+    // Reindex all accounts when searching all (empty query) to ensure data is fresh
+    if (!q || q.trim() === '') {
+      await adminService.syncAllAccountsToElasticsearch();
     }
+
+    const result = await adminService.searchAccounts(q, page, limit, sortBy, sortOrder);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

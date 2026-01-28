@@ -1,8 +1,37 @@
 import { supabase } from '../config/supabase';
 import dotenv from 'dotenv';
 import path from 'path';
+import { elasticsearchClient, LEADS_INDEX, PROFILES_INDEX, ACCOUNTS_INDEX } from '../config/elasticsearch';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+/**
+ * Clear all Elasticsearch indices
+ */
+export const clearElasticsearchIndices = async () => {
+  console.log('🗑️  Clearing Elasticsearch indices...');
+
+  const indices = [
+    { name: LEADS_INDEX, label: 'Leads' },
+    { name: PROFILES_INDEX, label: 'Profiles' },
+    { name: ACCOUNTS_INDEX, label: 'Accounts' }
+  ];
+
+  for (const index of indices) {
+    try {
+      const exists = await elasticsearchClient.indices.exists({ index: index.name });
+
+      if (exists) {
+        await elasticsearchClient.indices.delete({ index: index.name });
+        console.log(`✅ Cleared ${index.label} index: ${index.name}`);
+      } else {
+        console.log(`ℹ️  ${index.label} index does not exist: ${index.name}`);
+      }
+    } catch (err: any) {
+      console.error(`❌ Error clearing ${index.label} index:`, err.message);
+    }
+  }
+};
 
 export const clearDatabase = async () => {
   console.log('🗑️  Clearing all data from database...');
@@ -30,7 +59,7 @@ export const clearDatabase = async () => {
       // We need a column to query against. 'created_at' is common, or primary key.
       // Easiest is to use a condition that is always true for existing records.
       // Unlike SQL TRUNCATE, this creates transaction log overhead, but works via API.
-      
+
       // Note: Supabase/PostgREST usually requires a WHERE clause for delete to prevent accidents.
       // We use not.is('created_at', null) if created_at exists, or some primary key filter.
 
@@ -39,7 +68,7 @@ export const clearDatabase = async () => {
         .from(table)
         .delete()
         .neq('created_at', '1970-01-01'); // Assuming created_at is newer than epoch start.
-        // Better: .gt('created_at', '1970-01-01')
+      // Better: .gt('created_at', '1970-01-01')
 
       if (error) {
         // If table doesn't exist or other error, log it but continue
@@ -48,16 +77,16 @@ export const clearDatabase = async () => {
         console.log(`✅ Cleared table: ${table}`);
       }
     } catch (err: any) {
-        console.error(`Error clearing ${table}:`, err.message);
+      console.error(`Error clearing ${table}:`, err.message);
     }
   }
 
-  // Also clear Elasticsearch indices if we can (optional, but good for "Clear All")
-  // We can call the delete index functions from elasticsearch.ts but that deletes the index itself.
-  // We might want to just delete documents. 
-  // For now, let's keep it to SQL DB as requested "from all tables".
-  
-  console.log('✨ Database cleared.');
+  console.log('✨ Database tables cleared.');
+
+  // Clear Elasticsearch indices
+  await clearElasticsearchIndices();
+
+  console.log('✨ All data cleared (database + Elasticsearch).');
 };
 
 // Allow running this script directly
