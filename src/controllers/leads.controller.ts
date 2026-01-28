@@ -16,9 +16,14 @@ export const getAllLeads = async (req: Request, res: Response, next: NextFunctio
 
     let result;
 
-    if (search && useElasticsearch) {
+    if (useElasticsearch) {
+      // Index everything ONLY when search is empty as requested, to avoid slowing down specific searches
+      if (!search || search.trim() === '') {
+        await leadsService.syncAllLeadsToElasticsearch();
+      }
+
       // Use Elasticsearch for search
-      result = await leadsService.searchLeadsWithElasticsearch(search, page, limit);
+      result = await leadsService.searchLeadsWithElasticsearch(search || '', page, limit);
     } else {
       // Use database query
       result = await leadsService.getAllLeads(page, limit, search, status, source);

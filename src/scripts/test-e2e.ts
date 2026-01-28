@@ -8,7 +8,7 @@ async function runTest() {
   try {
     // Stage 0: Admin Setup via API
     console.log('\n--- Stage 0: Admin Setup (API) ---');
-    
+
     // 1. Create Service
     const serviceRes = await axios.post(`${BASE_URL}/admin/services`, {
       service_name: 'E2E Test Swim Class',
@@ -26,6 +26,23 @@ async function runTest() {
     const membershipId = membershipRes.data.membership_id;
     console.log('✅ POST /admin/memberships - Success');
 
+    // 2b. Bundle Service with Membership
+    await axios.post(`${BASE_URL}/admin/memberships/${membershipId}/services`, {
+      serviceId: serviceId,
+      accessType: 'CORE'
+    });
+    console.log('✅ POST /admin/memberships/:id/services - Success (Bundled Service)');
+
+    // 2c. Verify Bundled Service (GET)
+    const servicesRes = await axios.get(`${BASE_URL}/admin/memberships/${membershipId}/services`);
+    const services = servicesRes.data;
+    const bundledService = services.find((s: any) => s.service_id === serviceId);
+
+    if (!bundledService || bundledService.access_type !== 'CORE') {
+      throw new Error('Bundled service verification failed');
+    }
+    console.log('✅ GET /admin/memberships/:id/services - Success (Verified Bundle)');
+
     // 3. Create Subscription Type (Monthly)
     const subTypeRes = await axios.post(`${BASE_URL}/admin/subscription-types`, {
       type_name: 'E2E Monthly',
@@ -40,7 +57,7 @@ async function runTest() {
     const servicePlanRes = await axios.post(`${BASE_URL}/admin/service-plans`, {
       service_id: serviceId,
       subscription_type_id: subTypeId,
-      age_group: 'child',
+      age_group: 'Child (6–12)',
       funding_type: 'private',
       price: 150.00,
       currency: 'INR'
@@ -51,7 +68,7 @@ async function runTest() {
     const membershipPlanRes = await axios.post(`${BASE_URL}/admin/membership-plans`, {
       membership_id: membershipId,
       subscription_type_id: subTypeId,
-      age_group: 'adult',
+      age_group: 'Adult (18+)',
       funding_type: 'private',
       price: 4500.00,
       currency: 'INR'
@@ -90,7 +107,7 @@ async function runTest() {
     const tokensRes = await axios.get(`${BASE_URL}/debug/activation-tokens`);
     const myToken = tokensRes.data.tokens.find((t: any) => t.account?.email === testEmail);
     if (!myToken) throw new Error('Token not found');
-    
+
     const activationToken = myToken.token;
     console.log(`Bypassing email... Found token: ${activationToken}`);
 
@@ -114,7 +131,7 @@ async function runTest() {
 
     // Stage 4: Subscriptions & Billing
     console.log('\n--- Stage 4: Subscription & Payment ---');
-    
+
     // Create Subscription
     const subRes = await axios.post(`${BASE_URL}/subscriptions`, {
       accountId,

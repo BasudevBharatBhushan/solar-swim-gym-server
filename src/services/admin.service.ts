@@ -156,11 +156,11 @@ export const getAllMembershipPlans = async () => {
       membership:memberships(*),
       subscription_type:subscription_types(*)
     `);
-    
+
   if (error) {
     throw new AppError(`Failed to fetch membership plans: ${error.message}`, 500);
   }
-  
+
   return data;
 };
 
@@ -248,3 +248,133 @@ export const searchAccounts = async (
   return await esSearchAccounts(query, from, limit, sortBy, sortOrder);
 };
 
+/**
+ * Assign a service to a membership (Bundled/Core or Addon)
+ */
+export const assignServiceToMembership = async (
+  membershipId: string,
+  serviceId: string,
+  accessType: 'CORE' | 'ADDON'
+) => {
+  // Check if trying to assign as duplicate, or just let DB handle generic error?
+  // Postgres will throw uniquely constraint error, supabase returns it.
+
+  const { data, error } = await supabase
+    .from("membership_services")
+    .insert({
+      membership_id: membershipId,
+      service_id: serviceId,
+      access_type: accessType,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError(`Failed to assign service to membership: ${error.message}`, 500);
+  }
+
+  return data;
+};
+
+/**
+ * Get all services assigned to a membership
+ */
+export const getMembershipServices = async (membershipId: string) => {
+  const { data, error } = await supabase
+    .from("membership_services")
+    .select(`
+      *,
+      service:services(*)
+    `)
+    .eq("membership_id", membershipId);
+
+  if (error) {
+    throw new AppError(`Failed to fetch membership services: ${error.message}`, 500);
+  }
+
+  return data;
+};
+
+
+/**
+ * Sync all profiles from Supabase to Elasticsearch
+ */
+export const syncAllProfilesToElasticsearch = async () => {
+  try {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*');
+
+    if (error) {
+      throw new AppError(`Failed to fetch profiles for sync: ${error.message}`, 500);
+    }
+
+    if (!profiles || profiles.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // Initialize indices
+    const { indexProfile, initializeIndices } = require('../config/elasticsearch');
+    await initializeIndices();
+
+    // Index all profiles in parallel
+    await Promise.all(profiles.map(profile => indexProfile(profile)));
+
+    return { success: true, count: profiles.length };
+  } catch (error) {
+    console.error('Failed to sync profiles to Elasticsearch:', error);
+    throw error;
+  }
+};
+
+/**
+ * Sync all accounts from Supabase to Elasticsearch
+ */
+export const syncAllAccountsToElasticsearch = async () => {
+  try {
+    const { data: accounts, error } = await supabase
+      .from('accounts')
+      .select('*');
+
+    if (error) {
+      throw new AppError(`Failed to fetch accounts for sync: ${error.message}`, 500);
+    }
+
+    if (!accounts || accounts.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // Fetch profiles for each account and join them
+    const accountsWithProfiles = await Promise.all(
+      accounts.map(async (account) => {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('profile_id, first_name, last_name, email, parent_profile_id')
+          .eq('account_id', account.account_id);
+
+        const mappedProfiles = (profiles || []).map(p => ({
+          ...p,
+          headmember: !p.parent_profile_id
+        }));
+
+        if (account.email === 'family9@demo.com') {
+          console.log('[DEBUG] Mapped profiles for family9:', JSON.stringify(mappedProfiles.slice(0, 1), null, 2));
+        }
+
+        return { ...account, profiles: mappedProfiles };
+      })
+    );
+
+    // Initialize indices
+    const { indexAccount, initializeIndices } = require('../config/elasticsearch');
+    await initializeIndices();
+
+    // Index all accounts in parallel
+    await Promise.all(accountsWithProfiles.map(account => indexAccount(account)));
+
+    return { success: true, count: accounts.length };
+  } catch (error) {
+    console.error('Failed to sync accounts to Elasticsearch:', error);
+    throw error;
+  }
+};

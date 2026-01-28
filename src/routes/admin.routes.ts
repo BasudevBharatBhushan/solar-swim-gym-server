@@ -14,6 +14,8 @@ router.get("/services", adminController.getAllServices);
 // Memberships
 router.post("/memberships", adminController.createMembership);
 router.get("/memberships", adminController.getAllMemberships);
+router.post("/memberships/:id/services", adminController.assignServiceToMembership);
+router.get("/memberships/:id/services", adminController.getMembershipServices);
 
 
 // Service Plans

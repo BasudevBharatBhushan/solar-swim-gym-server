@@ -146,9 +146,21 @@ export const getProfiles = async (req: Request, res: Response, next: NextFunctio
     const limit = parseInt(req.query.limit as string) || 10;
     const sortBy = (req.query.sortBy as string) || 'created_at';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 'asc' : 'desc';
+    const useElasticsearch = req.query.useElasticsearch === 'true';
 
-    const result = await adminService.searchProfiles(q, page, limit, sortBy, sortOrder);
-    res.status(200).json(result);
+    if (useElasticsearch) {
+      if (!q || q.trim() === '') {
+        await adminService.syncAllProfilesToElasticsearch();
+      }
+      const result = await adminService.searchProfiles(q, page, limit, sortBy, sortOrder);
+      res.status(200).json(result);
+    } else {
+      // Logic for non-elasticsearch (Supabase direct search) could be added here
+      // For now, let's keep it as is or handle it if needed.
+      // Assuming searchProfiles currently ONLY uses ES.
+      const result = await adminService.searchProfiles(q, page, limit, sortBy, sortOrder);
+      res.status(200).json(result);
+    }
   } catch (error) {
     next(error);
   }
@@ -165,9 +177,18 @@ export const getAccounts = async (req: Request, res: Response, next: NextFunctio
     const limit = parseInt(req.query.limit as string) || 10;
     const sortBy = (req.query.sortBy as string) || 'created_at';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 'asc' : 'desc';
+    const useElasticsearch = req.query.useElasticsearch === 'true';
 
-    const result = await adminService.searchAccounts(q, page, limit, sortBy, sortOrder);
-    res.status(200).json(result);
+    if (useElasticsearch) {
+      if (!q || q.trim() === '') {
+        await adminService.syncAllAccountsToElasticsearch();
+      }
+      const result = await adminService.searchAccounts(q, page, limit, sortBy, sortOrder);
+      res.status(200).json(result);
+    } else {
+      const result = await adminService.searchAccounts(q, page, limit, sortBy, sortOrder);
+      res.status(200).json(result);
+    }
   } catch (error) {
     next(error);
   }
@@ -216,6 +237,49 @@ export const getAllMemberships = async (req: Request, res: Response, next: NextF
   try {
     const memberships = await adminService.getAllMemberships();
     res.status(200).json(memberships);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/v1/admin/memberships/:id/services
+ * Body: { serviceId: string, accessType: 'CORE' | 'ADDON' }
+ */
+export const assignServiceToMembership = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const membershipId = Array.isArray(id) ? id[0] : id;
+
+    const { serviceId, accessType } = req.body;
+
+    if (!serviceId || !accessType) {
+      res.status(400).json({ message: 'serviceId and accessType are required' });
+      return;
+    }
+
+    if (accessType !== 'CORE' && accessType !== 'ADDON') {
+      res.status(400).json({ message: "accessType must be 'CORE' or 'ADDON'" });
+      return;
+    }
+
+    const result = await adminService.assignServiceToMembership(membershipId, serviceId, accessType);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/v1/admin/memberships/:id/services
+ */
+export const getMembershipServices = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const membershipId = Array.isArray(id) ? id[0] : id;
+
+    const services = await adminService.getMembershipServices(membershipId);
+    res.status(200).json(services);
   } catch (error) {
     next(error);
   }

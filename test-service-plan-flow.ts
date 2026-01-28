@@ -3,7 +3,7 @@ import app from "./src/app";
 
 async function testServicePlanFlow() {
   console.log("🧪 Testing Service Plan API Flow\n");
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
 
   // Step 1: Fetch subscription types
   console.log("\n📋 Step 1: Fetching Subscription Types...");
@@ -11,12 +11,12 @@ async function testServicePlanFlow() {
     "/api/v1/admin/subscription-types"
   );
   console.log(`Status: ${subscriptionTypesRes.statusCode}`);
-  
+
   if (subscriptionTypesRes.statusCode !== 200) {
     console.error("❌ Failed to fetch subscription types");
     return;
   }
-  
+
   const subscriptionTypes = subscriptionTypesRes.body;
   console.log(`✅ Found ${subscriptionTypes.length} subscription types`);
   subscriptionTypes.forEach((type: any) => {
@@ -27,12 +27,12 @@ async function testServicePlanFlow() {
   console.log("\n📋 Step 2: Fetching Services...");
   const servicesRes = await request(app).get("/api/v1/services");
   console.log(`Status: ${servicesRes.statusCode}`);
-  
+
   if (servicesRes.statusCode !== 200) {
     console.error("❌ Failed to fetch services");
     return;
   }
-  
+
   const services = servicesRes.body;
   console.log(`✅ Found ${services.length} services`);
   services.forEach((service: any) => {
@@ -45,8 +45,8 @@ async function testServicePlanFlow() {
     service_id: services[0].service_id,
     subscription_type_id: subscriptionTypes[0].subscription_type_id,
     price: 100,
-    age_group: "4-6",
-    funding_type: "SELF",
+    age_group: "Child (6–12)",
+    funding_type: "private",
   };
 
   console.log("Request payload:");
@@ -57,7 +57,7 @@ async function testServicePlanFlow() {
     .send(servicePlanData);
 
   console.log(`Status: ${createRes.statusCode}`);
-  
+
   if (createRes.statusCode === 201) {
     console.log("✅ Service plan created successfully");
     console.log(JSON.stringify(createRes.body, null, 2));
@@ -70,7 +70,7 @@ async function testServicePlanFlow() {
   console.log("\n📋 Step 4: Fetching All Service Plans...");
   const servicePlansRes = await request(app).get("/api/v1/admin/service-plans");
   console.log(`Status: ${servicePlansRes.statusCode}`);
-  
+
   if (servicePlansRes.statusCode === 200) {
     const servicePlans = servicePlansRes.body;
     console.log(`✅ Found ${servicePlans.length} service plans`);
@@ -96,7 +96,7 @@ async function testServicePlanFlow() {
         .send(updateData);
 
       console.log(`Status: ${updateRes.statusCode}`);
-      
+
       if (updateRes.statusCode === 200) {
         console.log("✅ Service plan updated successfully");
         console.log(JSON.stringify(updateRes.body, null, 2));
@@ -113,7 +113,7 @@ async function testServicePlanFlow() {
     service_id: "061c0df8-c1b1-4395-9c02-84d394545010",
     subscription_type_id: "02ddccaf-fe0a-48bd-9b43-503220616b59",
     price: 100,
-    age_group: "4-6",
+    age_group: "Child (6–12)",
     funding_type: "SELF",
   };
 
@@ -137,7 +137,7 @@ async function testServicePlanFlow() {
   console.log(`   - Services: ${services.length}`);
   console.log(`   - Create Service Plan Status: ${createRes.statusCode}`);
   console.log(`   - Your CURL Test Status: ${yourTestRes.statusCode}`);
-  
+
   if (yourTestRes.statusCode === 500 && yourTestRes.body.message?.includes("unique or exclusion constraint")) {
     console.log("\n⚠️  ISSUE IDENTIFIED:");
     console.log("   The database is missing the unique index required for upsert.");

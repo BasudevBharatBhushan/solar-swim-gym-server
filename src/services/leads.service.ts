@@ -81,7 +81,8 @@ export const searchLeadsWithElasticsearch = async (
     };
 
   } catch (error) {
-    console.error('Elasticsearch search failed, falling back to database search');
+    console.error('Elasticsearch search failed:', error);
+    console.warn('Falling back to database search');
     // Fallback to database search if Elasticsearch fails
     return getAllLeads(page, limit, query);
   }
@@ -211,4 +212,34 @@ export const getLeadStats = async () => {
   };
 
   return stats;
+};
+
+/**
+ * Sync all leads from Supabase to Elasticsearch
+ */
+export const syncAllLeadsToElasticsearch = async () => {
+  try {
+    const { data: leads, error } = await supabase
+      .from('leads')
+      .select('*');
+
+    if (error) {
+      throw new AppError(`Failed to fetch leads for sync: ${error.message}`, 500);
+    }
+
+    if (!leads || leads.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // Initialize indices (idempotent)
+    await elasticsearch.initializeIndices();
+
+    // Index all leads in parallel for better performance
+    await Promise.all(leads.map(lead => elasticsearch.indexLead(lead)));
+
+    return { success: true, count: leads.length };
+  } catch (error) {
+    console.error('Failed to sync leads to Elasticsearch:', error);
+    throw error;
+  }
 };
