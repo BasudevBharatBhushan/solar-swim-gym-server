@@ -55,7 +55,7 @@ async function debugSearch() {
         try {
             const result = await elasticsearchClient.search({
                 index: "leads",
-                query: b.query
+                query: b.query as any
             });
             console.log(`❓ ${b.name}: Found ${result.hits.total ? (result.hits.total as any).value : 0}`);
         } catch (e: any) {
