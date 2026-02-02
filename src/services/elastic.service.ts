@@ -1,0 +1,203 @@
+import { Client } from '@elastic/elasticsearch';
+import dotenv from 'dotenv';
+import supabase from '../config/db';
+
+dotenv.config();
+
+const client = new Client({
+  node: process.env.ELASTICSEARCH_URL,
+  auth: {
+    apiKey: process.env.ELASTIC_API_KEY || ''
+  }
+});
+
+export const indexLead = async (lead: any) => {
+  try {
+    await client.index({
+      index: 'leads',
+      id: lead.lead_id,
+      document: {
+        lead_id: lead.lead_id,
+        location_id: lead.location_id,
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        mobile: lead.mobile,
+        status: lead.status,
+        notes: lead.notes,
+        created_at: lead.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Elasticsearch Indexing Error (Lead):', error);
+  }
+};
+
+export const indexAccount = async (accountId: string) => {
+  try {
+    const { data: account, error: accError } = await supabase
+      .from('account')
+      .select('*, profile(*)')
+      .eq('account_id', accountId)
+      .single();
+
+    if (accError || !account) return;
+
+    await client.index({
+      index: 'accounts',
+      id: account.account_id,
+      document: {
+        account_id: account.account_id,
+        location_id: account.location_id,
+        status: account.status,
+        created_at: account.created_at,
+        profiles: account.profile.map((p: any) => ({
+          profile_id: p.profile_id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          email: p.email,
+          mobile: p.mobile
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Elasticsearch Indexing Error (Account):', error);
+  }
+};
+
+export const searchLeads = async (
+  locationId: string,
+  query: string,
+  from: number = 0,
+  size: number = 10,
+  sortField: string = 'created_at',
+  sortOrder: 'asc' | 'desc' = 'desc'
+) => {
+  const must: any[] = [{ term: { location_id: locationId } }];
+  
+  if (query) {
+    must.push({
+      multi_match: {
+        query: query,
+        fields: ['first_name', 'last_name', 'email', 'mobile', 'notes'],
+        type: 'phrase_prefix'
+      }
+    });
+  }
+
+  const result = await client.search({
+    index: 'leads',
+    from,
+    size,
+    sort: [{ [sortField]: { order: sortOrder } }],
+    query: {
+      bool: {
+        must
+      }
+    }
+  });
+
+  return {
+    total: (result.hits.total as any).value,
+    results: result.hits.hits.map(h => h._source)
+  };
+};
+
+export const searchAccounts = async (
+  locationId: string,
+  query: string,
+  from: number = 0,
+  size: number = 10,
+  sortField: string = 'created_at',
+  sortOrder: 'asc' | 'desc' = 'desc'
+) => {
+  const must: any[] = [{ term: { location_id: locationId } }];
+
+  if (query) {
+    const q = query.toLowerCase();
+    must.push({
+      nested: {
+        path: 'profiles',
+        query: {
+          query_string: {
+            query: `*${q}*`,
+            fields: ['profiles.first_name', 'profiles.last_name', 'profiles.email', 'profiles.mobile'],
+            analyze_wildcard: true
+          }
+        }
+      }
+    });
+  }
+
+  const result = await client.search({
+    index: 'accounts',
+    from,
+    size,
+    sort: [{ [sortField]: { order: sortOrder } }],
+    query: {
+      bool: {
+        must
+      }
+    }
+  });
+
+  // Log inner hits if needed for debugging
+  // console.log('Search Result:', JSON.stringify(result, null, 2));
+
+  return {
+    total: (result.hits.total as any).value,
+    results: result.hits.hits.map(h => h._source)
+  };
+};
+
+export const clearIndices = async () => {
+    try {
+        await client.indices.delete({ index: 'leads', ignore_unavailable: true });
+        await client.indices.delete({ index: 'accounts', ignore_unavailable: true });
+        
+        await client.indices.create({
+            index: 'accounts',
+            mappings: {
+                properties: {
+                    profiles: { 
+                        type: 'nested',
+                        properties: {
+                            first_name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                            last_name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                            email: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                            mobile: { type: 'text', fields: { keyword: { type: 'keyword' } } }
+                        }
+                    },
+                    location_id: { type: 'keyword' },
+                    created_at: { type: 'date' },
+                    status: { type: 'keyword' }
+                }
+            }
+        });
+        
+        await client.indices.create({
+            index: 'leads',
+            mappings: {
+                properties: {
+                    first_name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                    last_name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                    email: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                    mobile: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+                    location_id: { type: 'keyword' },
+                    status: { type: 'keyword' },
+                    created_at: { type: 'date' }
+                }
+            }
+        });
+    } catch (e) {
+        console.error('Error clearing indices:', e);
+    }
+}
+
+export default {
+  indexLead,
+  indexAccount,
+  searchLeads,
+  searchAccounts,
+  clearIndices
+};

@@ -12,6 +12,7 @@ The Solar Swim Gym Backend is designed to handle the complex needs of multi-cent
 - **Membership Engine**: Hierarchical membership programs with category-specific fees, rules, and bundled services.
 - **Billing**: Automated invoice generation and subscription tracking.
 - **Multi-Location**: Staff and data are scoped to specific locations, with SuperAdmins having global visibility.
+- **Search (Elasticsearch)**: Powerful partial search for Leads and Accounts/Profiles using Elasticsearch Cloud.
 
 ---
 
@@ -77,6 +78,7 @@ npm run test
 **Run Specific Tests**:
 - Authentication Flow: `npm run test:auth`
 - RBAC Enforcement: `npm run test:rbac`
+- Elasticsearch Search: `npm run test:elastic`
 
 ---
 

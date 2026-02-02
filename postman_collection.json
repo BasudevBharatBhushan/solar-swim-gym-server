@@ -423,6 +423,32 @@
 							"response": []
 						},
 						{
+							"name": "Search Leads (Elastic)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/leads/search?q=John&size=10&from=0&sort=created_at&order=desc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"leads",
+										"search"
+									],
+									"query": [
+										{ "key": "q", "value": "John" },
+										{ "key": "size", "value": "10" },
+										{ "key": "from", "value": "0" },
+										{ "key": "sort", "value": "created_at" },
+										{ "key": "order", "value": "desc" }
+									]
+								},
+								"description": "Search leads using Elasticsearch. Supports partial matching and pagination."
+							},
+							"response": []
+						},
+						{
 							"name": "Create Lead",
 							"request": {
 								"method": "POST",
@@ -477,6 +503,28 @@
 							"response": []
 						},
 						{
+							"name": "Search Accounts (Elastic)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/accounts/search?q=Michael",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"accounts",
+										"search"
+									],
+									"query": [
+										{ "key": "q", "value": "Michael" }
+									]
+								},
+								"description": "Search accounts by any profile name or email. Uses nested Elasticsearch queries."
+							},
+							"response": []
+						},
+						{
 							"name": "Upsert Account (Complex)",
 							"request": {
 								"method": "POST",
@@ -500,6 +548,30 @@
 										"upsert"
 									]
 								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Maintenance",
+					"item": [
+						{
+							"name": "Global Reindex",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/cron/reindex-all",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"cron",
+										"reindex-all"
+									]
+								},
+								"description": "Trigger a full reindex of all data for the current location into Elasticsearch."
 							},
 							"response": []
 						}

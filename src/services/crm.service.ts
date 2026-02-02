@@ -1,5 +1,6 @@
 import supabase from '../config/db';
 import { Lead, Account } from '../types';
+import elasticService from './elastic.service';
 
 // --- LEADS ---
 export const getLeads = async (locationId: string): Promise<Lead[]> => {
@@ -42,7 +43,24 @@ export const upsertLead = async (data: UpsertLeadData): Promise<Lead> => {
     .single();
 
   if (error) throw new Error(error.message);
+  
+  // Index in Elasticsearch
+  await elasticService.indexLead(result);
+  
   return result as Lead;
+};
+
+export const reindexLeads = async (locationId: string): Promise<void> => {
+  const { data: leads, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('location_id', locationId);
+
+  if (error) throw new Error(error.message);
+  
+  for (const lead of (leads || [])) {
+    await elasticService.indexLead(lead);
+  }
 };
 
 // --- ACCOUNTS ---
@@ -149,12 +167,30 @@ export const upsertAccount = async (data: UpsertAccountData): Promise<{ account_
     }
   }
 
+  // Index in Elasticsearch
+  await elasticService.indexAccount(finalAccountId!);
+
   return { account_id: finalAccountId! };
+};
+
+export const reindexAccounts = async (locationId: string): Promise<void> => {
+    const { data: accounts, error } = await supabase
+        .from('account')
+        .select('account_id')
+        .eq('location_id', locationId);
+
+    if (error) throw new Error(error.message);
+
+    for (const acc of (accounts || [])) {
+        await elasticService.indexAccount(acc.account_id);
+    }
 };
 
 export default { 
   getLeads, 
   upsertLead, 
+  reindexLeads,
   getAccounts, 
-  upsertAccount 
+  upsertAccount,
+  reindexAccounts
 };
