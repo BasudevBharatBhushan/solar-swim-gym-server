@@ -1,6 +1,6 @@
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
-import routes from './routes';
+import routes from './routes/index';
 import { setLocationContext } from './middlewares/setLocationContext';
 import { optionalAuth } from './middlewares/auth';
 
