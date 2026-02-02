@@ -93,7 +93,7 @@ export const upsertService = async (data: UpsertServiceData): Promise<ServiceWit
     let finalServiceId = service_id;
 
     // 1. Service Update/Create
-    const servicePayload: any = { 
+    const servicePayload: Partial<Service> = { 
        location_id, name, description, is_addon_only: is_addon_only || false 
     };
     

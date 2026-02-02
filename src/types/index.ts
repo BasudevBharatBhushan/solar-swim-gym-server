@@ -1,3 +1,15 @@
+import { JwtPayload } from '../middlewares/auth';
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+      locationId?: string;
+    }
+  }
+}
+
 // Location Types
 export interface Location {
   location_id?: string;
@@ -112,20 +124,21 @@ export interface Profile {
   location_id: string;
   first_name: string;
   last_name: string;
-  date_of_birth?: string;
-  email?: string;
+  date_of_birth?: string | null;
+  email?: string | null;
   is_primary?: boolean;
-  guardian_name?: string;
-  guardian_mobile?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  waiver_program_id?: string;
-  case_manager_name?: string;
-  case_manager_email?: string;
+  guardian_name?: string | null;
+  guardian_mobile?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  waiver_program_id?: string | null;
+  case_manager_name?: string | null;
+  case_manager_email?: string | null;
+  mobile?: string | null;
 }
 
 // Request/Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;

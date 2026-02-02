@@ -11,6 +11,7 @@
     "test:auth": "ts-node src/scripts/test-auth-flow.ts",
     "test:rbac": "ts-node src/scripts/test-rbac.ts",
     "test:elastic": "ts-node src/scripts/test-elastic.ts",
+    "test:all": "npm run cleardb && npm run seed-staff && npm run test && npm run test:rbac && npm run test:elastic && npm run lint",
     "test:watch": "nodemon --watch src --ext ts --exec npm run test",
     "cleardb": "ts-node src/scripts/cleardb.ts",
     "seed-staff": "ts-node src/scripts/seed-staff.ts",

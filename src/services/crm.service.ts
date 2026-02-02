@@ -1,5 +1,5 @@
 import supabase from '../config/db';
-import { Lead, Account } from '../types';
+import { Lead, Account, Profile } from '../types';
 import elasticService from './elastic.service';
 
 // --- LEADS ---
@@ -27,7 +27,7 @@ interface UpsertLeadData {
 }
 
 export const upsertLead = async (data: UpsertLeadData): Promise<Lead> => {
-  const { lead_id, ...rest } = data;
+  const { lead_id } = data;
   
   // Clean payload
   const payload = { ...data };
@@ -110,7 +110,7 @@ const upsertProfileHelper = async (
   const case_manager_name = (waiverData && waiverData.case_manager_name) || null;
   const case_manager_email = (waiverData && waiverData.case_manager_email) || null;
   
-  const payload: any = {
+  const payload: Profile = {
     account_id, location_id, first_name, last_name, date_of_birth, email,
     is_primary: is_primary || false,
     guardian_name, guardian_mobile, emergency_contact_name, emergency_contact_phone,

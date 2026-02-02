@@ -1,6 +1,7 @@
 import { Client } from '@elastic/elasticsearch';
 import dotenv from 'dotenv';
 import supabase from '../config/db';
+import { Lead, Profile, Account } from '../types';
 
 dotenv.config();
 
@@ -11,7 +12,7 @@ const client = new Client({
   }
 });
 
-export const indexLead = async (lead: any) => {
+export const indexLead = async (lead: Lead) => {
   try {
     await client.index({
       index: 'leads',
@@ -51,7 +52,7 @@ export const indexAccount = async (accountId: string) => {
         location_id: account.location_id,
         status: account.status,
         created_at: account.created_at,
-        profiles: account.profile.map((p: any) => ({
+        profiles: (account as Account & { profile: Profile[] }).profile.map((p: Profile) => ({
           profile_id: p.profile_id,
           first_name: p.first_name,
           last_name: p.last_name,
@@ -73,7 +74,7 @@ export const searchLeads = async (
   sortField: string = 'created_at',
   sortOrder: 'asc' | 'desc' = 'desc'
 ) => {
-  const must: any[] = [{ term: { location_id: locationId } }];
+  const must: Record<string, unknown>[] = [{ term: { location_id: locationId } }];
   
   if (query) {
     must.push({
@@ -97,8 +98,12 @@ export const searchLeads = async (
     }
   });
 
+  const total = typeof result.hits.total === 'number' 
+    ? result.hits.total 
+    : (result.hits.total as { value: number })?.value || 0;
+
   return {
-    total: (result.hits.total as any).value,
+    total,
     results: result.hits.hits.map(h => h._source)
   };
 };
@@ -111,7 +116,7 @@ export const searchAccounts = async (
   sortField: string = 'created_at',
   sortOrder: 'asc' | 'desc' = 'desc'
 ) => {
-  const must: any[] = [{ term: { location_id: locationId } }];
+  const must: Record<string, unknown>[] = [{ term: { location_id: locationId } }];
 
   if (query) {
     const q = query.toLowerCase();
@@ -144,8 +149,12 @@ export const searchAccounts = async (
   // Log inner hits if needed for debugging
   // console.log('Search Result:', JSON.stringify(result, null, 2));
 
+  const total = typeof result.hits.total === 'number' 
+    ? result.hits.total 
+    : (result.hits.total as { value: number })?.value || 0;
+
   return {
-    total: (result.hits.total as any).value,
+    total,
     results: result.hits.hits.map(h => h._source)
   };
 };

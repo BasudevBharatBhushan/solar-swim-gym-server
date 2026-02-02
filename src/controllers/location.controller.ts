@@ -7,11 +7,12 @@ export const getAllLocations = async (req: Request, res: Response): Promise<void
     const locations = await locationService.getAllLocations();
     console.log('Controller: fetched locations:', locations?.length);
     res.json(locations);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in getAllLocations:', err);
-    console.error('Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    const errorDetails = err instanceof Error ? JSON.stringify(err, Object.getOwnPropertyNames(err)) : String(err);
+    console.error('Error details:', errorDetails);
     res.status(500).json({ 
-      error: err.message || 'Unknown error', 
+      error: err instanceof Error ? err.message : 'Unknown error', 
       details: err 
     });
   }
@@ -21,9 +22,9 @@ export const upsertLocation = async (req: Request, res: Response): Promise<void>
   try {
     const location = await locationService.upsertLocation(req.body);
     res.json(location);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in upsertLocation:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 

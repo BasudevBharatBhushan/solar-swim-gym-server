@@ -12,9 +12,9 @@ export const getAgeGroups = async (): Promise<AgeGroup[]> => {
   return data || [];
 };
 
-export const upsertAgeGroup = async (data: any): Promise<any> => {
+export const upsertAgeGroup = async (data: AgeGroup): Promise<AgeGroup> => {
   const { age_group_id, name, min_age, max_age } = data;
-  const payload: any = { name, min_age, max_age };
+  const payload: Partial<AgeGroup> = { name, min_age, max_age };
   
   if (age_group_id) {
     payload.age_group_id = age_group_id;
@@ -46,10 +46,10 @@ export const getTerms = async (locationId?: string): Promise<SubscriptionTerm[]>
   return data || [];
 };
 
-export const upsertTerm = async (data: any): Promise<any> => {
+export const upsertTerm = async (data: SubscriptionTerm): Promise<SubscriptionTerm> => {
   const { subscription_term_id, location_id, name, duration_months, payment_mode, is_active } = data;
   
-  const payload: any = { 
+  const payload: Partial<SubscriptionTerm> = { 
     location_id, 
     name, 
     duration_months, 
@@ -87,10 +87,10 @@ export const getWaivers = async (locationId?: string): Promise<WaiverProgram[]> 
   return data || [];
 };
 
-export const upsertWaiver = async (data: any): Promise<any> => {
+export const upsertWaiver = async (data: WaiverProgram): Promise<WaiverProgram> => {
   const { waiver_program_id, location_id, name, description, is_active } = data;
   
-  const payload: any = { 
+  const payload: Partial<WaiverProgram> = { 
     location_id, 
     name, 
     description, 

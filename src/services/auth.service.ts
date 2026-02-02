@@ -1,7 +1,7 @@
 import supabase from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Staff, LoginCredentials, AuthResponse } from '../types';
+import { Staff, AuthResponse } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_123';
 
@@ -45,7 +45,7 @@ export const staffLogin = async (email: string, password: string): Promise<AuthR
   );
 
   // Remove password hash from response
-  const { password_hash, ...staffWithoutPassword } = staffRecord;
+  const { password_hash: _, ...staffWithoutPassword } = staffRecord;
 
   return { 
     token, 
@@ -235,7 +235,7 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
   }
 
   // Check if account is active
-  if ((profile.account as any).status !== 'ACTIVE') {
+  if ((profile.account as { status: string }).status !== 'ACTIVE') {
     throw new Error('Account not activated. Please check your email for activation link.');
   }
 
@@ -258,7 +258,7 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
     { 
       profile_id: profile.profile_id,
       account_id: profile.account_id,
-      location_id: (profile.account as any).location_id,
+      location_id: (profile.account as { location_id: string }).location_id,
       type: 'user'
     },
     JWT_SECRET,
@@ -270,7 +270,7 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
 
   return { 
     token, 
-    staff: profileWithoutPassword as any // Using staff field for compatibility
+    staff: profileWithoutPassword as unknown as Staff // Using staff field for compatibility
   };
 };
 
@@ -337,7 +337,7 @@ export const createStaff = async (staffData: {
     throw new Error('Failed to create staff: ' + error.message);
   }
 
-  const { password_hash, ...staffWithoutPassword } = data;
+  const { password_hash: _, ...staffWithoutPassword } = data;
   return staffWithoutPassword as Staff;
 };
 

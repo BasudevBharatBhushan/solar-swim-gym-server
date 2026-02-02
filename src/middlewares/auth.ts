@@ -36,11 +36,11 @@ export const authenticateToken = (
         return;
       }
 
-      (req as any).user = decoded as JwtPayload;
+      req.user = decoded as JwtPayload;
       next();
     });
-  } catch (error: any) {
-    console.error('Error in authenticateToken middleware:', error.message);
+  } catch (error: unknown) {
+    console.error('Error in authenticateToken middleware:', (error as Error).message);
     res.status(500).json({ error: 'Authentication error' });
   }
 };
@@ -65,11 +65,11 @@ export const optionalAuth = (
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (!err) {
-        (req as any).user = decoded as JwtPayload;
+        req.user = decoded as JwtPayload;
       }
       next();
     });
-  } catch (error) {
+  } catch {
     // Silently fail for optional auth
     next();
   }

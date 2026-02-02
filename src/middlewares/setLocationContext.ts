@@ -15,22 +15,22 @@ export const setLocationContext = async (
 ) => {
   try {
     // Get location_id from multiple sources (in order of priority)
-    let locationId = 
+    const locationId = 
       req.headers['x-location-id'] as string ||  // 1. Header
       req.body?.location_id ||                     // 2. Request body
-      (req as any).user?.location_id;              // 3. JWT token (set by auth middleware)
+      req.user?.location_id;              // 3. JWT token (set by auth middleware)
     
     if (locationId) {
       // Store in request object for use in controllers/services
-      (req as any).locationId = locationId;
+      req.locationId = locationId;
       console.log(`✓ Location context set: ${locationId}`);
     } else {
       console.log('⚠ No location_id found in request');
     }
     
     next();
-  } catch (error: any) {
-    console.error('Error in setLocationContext middleware:', error.message);
+  } catch (error: unknown) {
+    console.error('Error in setLocationContext middleware:', (error as Error).message);
     // Don't block the request, just log the error
     next();
   }

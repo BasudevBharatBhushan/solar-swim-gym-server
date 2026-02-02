@@ -15,15 +15,15 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Helper to check connection
 export const checkConnection = async () => {
   try {
-    const { data, error } = await supabase.from('location').select('count', { count: 'exact', head: true });
+    const { error } = await supabase.from('location').select('count', { count: 'exact', head: true });
     if (error) {
        console.error('❌ Supabase connection check failed:', error.message);
        return false;
     }
     console.log('✅ Supabase connection successful');
     return true;
-  } catch (err: any) {
-    console.error('❌ Supabase connection error:', err.message);
+  } catch (err: unknown) {
+    console.error('❌ Supabase connection error:', (err as Error).message);
     return false;
   }
 };

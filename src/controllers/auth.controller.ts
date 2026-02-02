@@ -13,9 +13,9 @@ export const staffLogin = async (req: Request, res: Response): Promise<void> => 
     }
     const result = await authService.staffLogin(email, password);
     res.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in staffLogin:', err);
-    res.status(401).json({ error: err.message });
+    res.status(401).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 
@@ -69,9 +69,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       // In production, don't send token in response - only via email
       activation_token: result.activation_token
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in registerUser:', err);
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 
@@ -94,9 +94,9 @@ export const activateAccount = async (req: Request, res: Response): Promise<void
 
     const result = await authService.activateAccount(token, password);
     res.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in activateAccount:', err);
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 
@@ -112,9 +112,9 @@ export const accountLogin = async (req: Request, res: Response): Promise<void> =
     }
     const result = await authService.accountLogin(email, password);
     res.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in accountLogin:', err);
-    res.status(401).json({ error: err.message });
+    res.status(401).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 
@@ -130,9 +130,9 @@ export const getActivationToken = async (req: Request, res: Response): Promise<v
     }
     const result = await authService.getActivationToken(email);
     res.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in getActivationToken:', err);
-    res.status(404).json({ error: err.message });
+    res.status(404).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 
@@ -158,9 +158,9 @@ export const createStaff = async (req: Request, res: Response): Promise<void> =>
     });
 
     res.status(201).json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in createStaff:', err);
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 

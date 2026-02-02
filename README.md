@@ -53,7 +53,13 @@ PORT=3000
 JWT_SECRET=your-secret-key
 ```
 
-### 2. Database Preparation
+### 2. Start the Server
+Before running any tests, start the development server:
+```bash
+npm run dev
+```
+
+### 3. Database Preparation
 To ensure a clean state for testing, you can clear and re-seed the database.
 
 **Clear Database**: Removes all data from all tables (use with caution).
@@ -67,10 +73,16 @@ npm run seed-staff
 ```
 *Note: This creates a SuperAdmin and two Admins for testing (password: `password123`).*
 
-### 3. Running Tests
+### 4. Running Tests
 The project includes a comprehensive end-to-end test suite that validates all API endpoints.
 
-**Run All Tests**:
+**Run All Tests (Complete Suite)**:
+This command will clear the database, seed fresh data, run all test scripts sequentially, and finally run ESLint.
+```bash
+npm run test:all
+```
+
+**Run API Test Suite**:
 ```bash
 npm run test
 ```

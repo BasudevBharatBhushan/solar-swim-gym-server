@@ -26,7 +26,7 @@ export const requireAuth = (
   res: Response,
   next: NextFunction
 ) => {
-  const user = (req as any).user as AuthUser;
+  const user = req.user as unknown as AuthUser;
   
   if (!user) {
     res.status(401).json({ error: 'Authentication required' });
@@ -42,7 +42,7 @@ export const requireAuth = (
  */
 export const requireRole = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user as AuthUser;
+    const user = req.user as unknown as AuthUser;
     
     if (!user) {
       res.status(401).json({ error: 'Authentication required' });
@@ -97,7 +97,7 @@ export const validateLocationAccess = (
   res: Response,
   next: NextFunction
 ) => {
-  const user = (req as any).user as AuthUser;
+  const user = req.user as unknown as AuthUser;
   
   if (!user) {
     res.status(401).json({ error: 'Authentication required' });
