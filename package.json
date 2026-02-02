@@ -2,18 +2,40 @@
   "name": "solar_swim_gym_backend_ii",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch src --ext ts --exec ts-node index.ts",
+    "test": "ts-node src/scripts/test-all-apis.ts",
+    "test:auth": "ts-node src/scripts/test-auth-flow.ts",
+    "test:rbac": "ts-node src/scripts/test-rbac.ts",
+    "test:watch": "nodemon --watch src --ext ts --exec npm run test",
+    "cleardb": "ts-node src/scripts/cleardb.ts",
+    "seed-staff": "ts-node src/scripts/seed-staff.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.93.3",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.2.0",
+    "@types/pg": "^8.16.0",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

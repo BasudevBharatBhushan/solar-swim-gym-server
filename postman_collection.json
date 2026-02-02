@@ -1,0 +1,570 @@
+{
+	"info": {
+		"_postman_id": "a2b3c4d5-e6f7-48a9-bc0d-1e2f3a4b5c6d",
+		"name": "Solar Swim Gym API",
+		"description": "Comprehensive API collection for Solar Swim Gym Backend II",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Staff Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"superadmin@solar.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/staff/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"staff",
+								"login"
+							]
+						},
+						"description": "Login for staff members (SuperAdmin, Admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "User Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"first_name\": \"John\",\n    \"last_name\": \"User\",\n    \"email\": \"user.{{$timestamp}}@example.com\",\n    \"date_of_birth\": \"1990-01-01\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/user/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"user",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User Activate",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"{{activationToken}}\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/user/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"user",
+								"activate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/user/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"user",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Locations",
+			"item": [
+				{
+					"name": "Get All Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/locations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Location",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Downtown Branch\",\n    \"address\": \"123 Main St, City\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/locations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"locations"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Configuration",
+			"item": [
+				{
+					"name": "Age Groups",
+					"item": [
+						{
+							"name": "Get Age Groups",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/config/age-groups",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"config",
+										"age-groups"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Age Group",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Adult\",\n    \"min_age\": 18,\n    \"max_age\": 65\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/config/age-groups",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"config",
+										"age-groups"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Subscription Terms",
+					"item": [
+						{
+							"name": "Get Subscription Terms",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-location-id",
+										"value": "{{lastLocationId}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/config/subscription-terms",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"config",
+										"subscription-terms"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Subscription Term",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Monthly\",\n    \"duration_months\": 1,\n    \"payment_mode\": \"RECURRING\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/config/subscription-terms",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"config",
+										"subscription-terms"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Waiver Programs",
+					"item": [
+						{
+							"name": "Get Waiver Programs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-location-id",
+										"value": "{{lastLocationId}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/config/waiver-programs",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"config",
+										"waiver-programs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Waiver Program",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Standard Liability Waiver\",\n    \"description\": \"Full waiver details here...\",\n    \"code\": \"SLW-001\",\n    \"requires_case_manager\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/config/waiver-programs",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"config",
+										"waiver-programs"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Services",
+			"item": [
+				{
+					"name": "Get All Services",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-location-id",
+								"value": "{{lastLocationId}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/services",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"services"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Service",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Swimming Lesson\",\n    \"description\": \"Group swimming lesson for beginners\",\n    \"service_type\": \"class\",\n    \"is_addon_only\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/services",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"services"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CRM",
+			"item": [
+				{
+					"name": "Leads",
+					"item": [
+						{
+							"name": "Get Leads",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-location-id",
+										"value": "{{lastLocationId}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/leads",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"leads"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Lead",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Smith\",\n    \"email\": \"jane.smith@example.com\",\n    \"mobile\": \"555-0101\",\n    \"status\": \"NEW\",\n    \"notes\": \"Interested in joining soon\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/leads",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"leads"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Accounts",
+					"item": [
+						{
+							"name": "Get Accounts",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-location-id",
+										"value": "{{lastLocationId}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/accounts",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"accounts"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Upsert Account (Complex)",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"primary_profile\": {\n        \"first_name\": \"Mike\",\n        \"last_name\": \"Johnson\",\n        \"email\": \"mike.j@example.com\",\n        \"date_of_birth\": \"1985-05-15\"\n    },\n    \"family_members\": [\n        {\n            \"first_name\": \"Lily\",\n            \"last_name\": \"Johnson\",\n            \"date_of_birth\": \"2015-08-20\",\n            \"guardian_name\": \"Mike Johnson\",\n            \"guardian_mobile\": \"555-0102\"\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/accounts/upsert",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"accounts",
+										"upsert"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Automatically extract token and certain IDs if present",
+					"if (pm.response.code === 200 || pm.response.code === 201) {",
+					"    const jsonData = pm.response.json();",
+					"    if (jsonData.token) {",
+					"        pm.environment.set(\"token\", jsonData.token);",
+					"    }",
+					"    if (jsonData.location_id) {",
+					"        pm.environment.set(\"lastLocationId\", jsonData.location_id);",
+					"    }",
+					"    if (jsonData.activation_token) {",
+					"        pm.environment.set(\"activationToken\", jsonData.activation_token);",
+					"    }",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3001/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "lastLocationId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
