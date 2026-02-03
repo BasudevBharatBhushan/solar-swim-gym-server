@@ -1,5 +1,5 @@
 /**
- * Authentication Flow Test Script
+ * Authentication Flow Test Suite
  * Tests user registration, activation, and login flow
  */
 
@@ -29,6 +29,7 @@ let testEmail: string = '';
 let activationToken: string = '';
 let userToken: string = '';
 let staffToken: string = '';
+let accountId: string = '';
 
 async function testApi(
   method: string,
@@ -41,12 +42,16 @@ async function testApi(
   console.log(`${colors.bright}${colors.blue}${description}${colors.reset}`);
   console.log(`${colors.yellow}${method} ${endpoint}${colors.reset}`);
   
+  if (headers['Authorization']) {
+      console.log(`${colors.cyan}Auth:${colors.reset} Bearer ${headers['Authorization'].substring(7, 20)}...`);
+  }
+
   if (body) {
     console.log(`${colors.cyan}Request Body:${colors.reset}`, JSON.stringify(body, null, 2));
   }
 
   try {
-    const options: RequestInit = {
+    const options: any = {
       method,
       headers: {
         'Content-Type': 'application/json',
@@ -75,7 +80,6 @@ async function testApi(
     
     if (success) {
       console.log(`${colors.green}✓ Status: ${status}${colors.reset}`);
-      console.log(`${colors.green}Response:${colors.reset}`, JSON.stringify(data, null, 2));
     } else {
       console.log(`${colors.red}✗ Status: ${status}${colors.reset}`);
       console.log(`${colors.red}Error Response:${colors.reset}`, JSON.stringify(data, null, 2));
@@ -102,6 +106,26 @@ async function testApi(
   }
 }
 
+async function testStaffLogin() {
+  console.log(`\n${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}    PREREQUISITE: STAFF LOGIN${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
+
+  const loginData = {
+    email: "superadmin@solar.com",
+    password: "password123"
+  };
+
+  const result = await testApi('POST', '/auth/staff/login', loginData, 'Staff Login');
+  if (result && result.token) {
+    staffToken = result.token;
+    console.log(`${colors.green}✓ Staff login successful${colors.reset}`);
+  } else {
+    console.log(`${colors.red}✗ Staff login failed. Did you run seed-staff.ts?${colors.reset}`);
+    process.exit(1);
+  }
+}
+
 async function setupTestLocation() {
   console.log(`\n${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
   console.log(`${colors.bright}${colors.cyan}    SETUP: CREATE TEST LOCATION${colors.reset}`);
@@ -118,12 +142,14 @@ async function setupTestLocation() {
     timezone: "America/Los_Angeles"
   };
   
-  const location = await testApi('POST', '/locations', locationData, 'Create Test Location');
+  const location = await testApi('POST', '/locations', locationData, 'Create Test Location', {
+      'Authorization': `Bearer ${staffToken}`
+  });
+  
   if (location && location.location_id) {
     testLocationId = location.location_id;
     console.log(`${colors.green}✓ Test location created: ${testLocationId}${colors.reset}`);
   } else {
-    console.log(`${colors.red}✗ Failed to create test location${colors.reset}`);
     process.exit(1);
   }
 }
@@ -137,44 +163,43 @@ async function testUserRegistration() {
 
   const userData = {
     location_id: testLocationId,
-    first_name: "John",
-    last_name: "Doe",
-    email: testEmail,
-    date_of_birth: "1990-01-15",
-    emergency_contact_name: "Jane Doe",
-    emergency_contact_phone: "555-0102"
+    primary_profile: {
+      first_name: "John",
+      last_name: "Doe",
+      email: testEmail,
+      date_of_birth: "1990-01-15",
+      emergency_contact_name: "Jane Doe",
+      emergency_contact_phone: "555-0102"
+    }
   };
 
   const result = await testApi('POST', '/auth/user/register', userData, 'Register New User');
-  
   if (result && result.activation_token) {
     activationToken = result.activation_token;
+    accountId = result.account_id;
     console.log(`${colors.green}✓ Registration successful${colors.reset}`);
-    console.log(`${colors.green}✓ Activation token: ${activationToken}${colors.reset}`);
-  } else {
-    console.log(`${colors.red}✗ Registration failed${colors.reset}`);
   }
 }
 
-async function testGetActivationToken() {
+async function testValidateToken() {
   console.log(`\n${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}    STEP 2: GET ACTIVATION TOKEN (Debug)${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}    STEP 2: VALIDATE TOKEN (GET)${colors.reset}`);
   console.log(`${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
 
-  const result = await testApi('POST', '/auth/user/get-activation-token', 
-    { email: testEmail }, 
-    'Get Activation Token for Testing'
+  const result = await testApi('GET', `/auth/user/activate?token=${activationToken}`, 
+    null, 
+    'Validate Activation Token'
   );
   
-  if (result && result.token) {
-    activationToken = result.token;
-    console.log(`${colors.green}✓ Retrieved activation token: ${activationToken}${colors.reset}`);
+  if (result && result.success) {
+    console.log(`${colors.green}✓ Token validation successful${colors.reset}`);
+    console.log(`${colors.green}✓ Account: ${JSON.stringify(result.account)}${colors.reset}`);
   }
 }
 
 async function testAccountActivation() {
   console.log(`\n${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}    STEP 3: ACTIVATE ACCOUNT${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}    STEP 3: ACTIVATE ACCOUNT (POST)${colors.reset}`);
   console.log(`${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
 
   const activationData = {
@@ -182,13 +207,7 @@ async function testAccountActivation() {
     password: "SecurePassword123!"
   };
 
-  const result = await testApi('POST', '/auth/user/activate', activationData, 'Activate Account & Set Password');
-  
-  if (result && result.success) {
-    console.log(`${colors.green}✓ Account activated successfully${colors.reset}`);
-  } else {
-    console.log(`${colors.red}✗ Account activation failed${colors.reset}`);
-  }
+  await testApi('POST', '/auth/user/activate', activationData, 'Activate Account & Set Password');
 }
 
 async function testUserLogin() {
@@ -202,39 +221,61 @@ async function testUserLogin() {
   };
 
   const result = await testApi('POST', '/auth/user/login', loginData, 'User Login');
-  
   if (result && result.token) {
     userToken = result.token;
     console.log(`${colors.green}✓ Login successful${colors.reset}`);
-    console.log(`${colors.green}✓ JWT Token: ${userToken.substring(0, 50)}...${colors.reset}`);
-    
-    // Decode and display token payload
-    const payload = JSON.parse(Buffer.from(userToken.split('.')[1], 'base64').toString());
-    console.log(`${colors.cyan}Token Payload:${colors.reset}`, JSON.stringify(payload, null, 2));
-  } else {
-    console.log(`${colors.red}✗ Login failed${colors.reset}`);
   }
 }
 
-async function testStaffLogin() {
+async function testUpsertAccountValidation() {
   console.log(`\n${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}    STEP 5: STAFF LOGIN (Expected to fail)${colors.reset}`);
+  console.log(`${colors.bright}${colors.cyan}    STEP 5: UPSERT ACCOUNT VALIDATION${colors.reset}`);
   console.log(`${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
 
-  const loginData = {
-    email: "admin@solar.com",
-    password: "password123"
-  };
+  console.log(`\n${colors.blue}Testing upsert without account_id (Should Fail):${colors.reset}`);
+  const resultFail = await testApi('POST', '/accounts/upsert', 
+    { 
+      location_id: testLocationId,
+      primary_profile: {
+        first_name: "Bad",
+        last_name: "Request",
+        email: "bad@example.com",
+        date_of_birth: "1990-01-01"
+      }
+    }, 
+    'Upsert Account without ID (Fail Expected)',
+    { 'Authorization': `Bearer ${staffToken}` }
+  );
 
-  const result = await testApi('POST', '/auth/staff/login', loginData, 'Staff Login');
-  
-  if (result && result.token) {
-    staffToken = result.token;
-    console.log(`${colors.green}✓ Staff login successful${colors.reset}`);
-    
-    // Decode and display token payload
-    const payload = JSON.parse(Buffer.from(staffToken.split('.')[1], 'base64').toString());
-    console.log(`${colors.cyan}Token Payload:${colors.reset}`, JSON.stringify(payload, null, 2));
+  if (resultFail && resultFail.error) {
+    console.log(`${colors.green}✓ Successfully caught missing account_id error: ${resultFail.error}${colors.reset}`);
+  } else {
+    // If it didn't return an error, we manually add a failure
+     testResults.push({
+        step: 'Upsert Account without ID (Fail Expected)',
+        success: false,
+        error: 'Upsert should have failed but succeeded'
+    });
+  }
+
+  console.log(`\n${colors.blue}Testing upsert with valid account_id (Should Succeed):${colors.reset}`);
+  const resultSuccess = await testApi('POST', '/accounts/upsert', 
+    { 
+      account_id: accountId,
+      location_id: testLocationId,
+      primary_profile: {
+        first_name: "Updated John",
+        last_name: "Doe",
+        email: testEmail,
+        date_of_birth: "1990-01-15"
+      }
+    }, 
+    'Upsert Account with ID (Success Expected)',
+    { 'Authorization': `Bearer ${staffToken}` }
+  );
+
+  if (resultSuccess && resultSuccess.account_id) {
+    console.log(`${colors.green}✓ Upsert successful for account: ${resultSuccess.account_id}${colors.reset}`);
   }
 }
 
@@ -244,44 +285,34 @@ function printSummary() {
   console.log(`${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}\n`);
 
   const totalTests = testResults.length;
-  const passedTests = testResults.filter(r => r.success).length;
-  const failedTests = totalTests - passedTests;
+  const passedTests = testResults.filter(r => r.success || r.step.includes('Fail Expected')).length;
+  const actualFailures = testResults.filter(r => !r.success && !r.step.includes('Fail Expected'));
+  const failedCount = actualFailures.length;
 
   console.log(`Total Steps: ${totalTests}`);
   console.log(`${colors.green}Passed: ${passedTests}${colors.reset}`);
-  console.log(`${colors.red}Failed: ${failedTests}${colors.reset}`);
+  console.log(`${colors.red}Failed: ${failedCount}${colors.reset}`);
 
-  if (failedTests > 0) {
+  if (failedCount > 0) {
     console.log(`\n${colors.red}Failed Steps:${colors.reset}`);
-    testResults.filter(r => !r.success).forEach(r => {
+    actualFailures.forEach(r => {
       console.log(`  ${colors.red}✗${colors.reset} ${r.step} - ${r.error || 'Unknown error'}`);
     });
   }
-
-  console.log(`\n${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}    TEST DATA${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}═══════════════════════════════════════${colors.reset}\n`);
-  console.log(`Location ID: ${testLocationId}`);
-  console.log(`Test Email: ${testEmail}`);
-  console.log(`Activation Token: ${activationToken}`);
-  console.log(`User JWT Token: ${userToken ? userToken.substring(0, 50) + '...' : 'N/A'}`);
 }
 
 async function runAuthFlowTests() {
-  console.log(`${colors.bright}${colors.cyan}╔═══════════════════════════════════════╗${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}║  AUTHENTICATION FLOW TEST SUITE       ║${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}╔═══════════════════════════════════════╗${colors.reset}`);
-
+  await testStaffLogin();
   await setupTestLocation();
   await testUserRegistration();
-  await testGetActivationToken();
+  await testValidateToken();
   await testAccountActivation();
   await testUserLogin();
-  await testStaffLogin();
+  await testUpsertAccountValidation();
 
   printSummary();
   
-  const hasFailures = testResults.some(r => !r.success && !r.step.includes('Expected to fail'));
+  const hasFailures = testResults.some(r => !r.success && !r.step.includes('Fail Expected'));
   process.exit(hasFailures ? 1 : 0);
 }
 

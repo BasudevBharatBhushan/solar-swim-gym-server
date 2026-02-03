@@ -27,7 +27,27 @@ export const upsertService = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+export const getService = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+        res.status(400).json({ error: 'Service ID is required' });
+        return;
+    }
+    const service = await serviceService.getServiceById(id as string);
+    if (!service) {
+        res.status(404).json({ error: 'Service not found' });
+        return;
+    }
+    res.json(service);
+  } catch (err: unknown) {
+      console.error('Error in getService:', err);
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
 export default {
   getAllServices,
-  upsertService
+  upsertService,
+  getService
 };

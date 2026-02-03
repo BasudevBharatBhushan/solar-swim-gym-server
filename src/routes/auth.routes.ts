@@ -11,12 +11,11 @@ router.post('/staff/create', authenticateToken, requireAdmin, authController.cre
 
 // User/Account Authentication
 router.post('/user/register', authController.registerUser);
+router.get('/user/activate', authController.validateToken);
 router.post('/user/activate', authController.activateAccount);
 router.post('/user/login', authController.accountLogin);
-
 
 // Testing/Debug endpoint - Get activation token
 router.post('/user/get-activation-token', authController.getActivationToken);
 
 export default router;
-

@@ -4,6 +4,11 @@ import authRoutes from './auth.routes';
 import configRoutes from './config.routes';
 import serviceRoutes from './service.routes';
 import crmRoutes from './crm.routes';
+import basePriceRoutes from './base-price.routes';
+import membershipRoutes from './membership.routes';
+import billingRoutes from './billing.routes';
+import discountRoutes from './discount.routes';
+
 
 const router = Router();
 
@@ -11,6 +16,11 @@ router.use('/locations', locationRoutes);
 router.use('/auth', authRoutes);
 router.use('/config', configRoutes);
 router.use('/services', serviceRoutes);
+router.use('/base-prices', basePriceRoutes);
+router.use('/memberships', membershipRoutes);
+router.use('/billing', billingRoutes);
+router.use('/discounts', discountRoutes);
+
 router.use('/', crmRoutes); // Exposes /leads, /accounts directly
 
 export default router;

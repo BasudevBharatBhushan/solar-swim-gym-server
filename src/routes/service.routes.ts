@@ -7,6 +7,7 @@ const router = Router();
 
 // Service management
 router.get('/', authenticateToken, serviceController.getAllServices);
+router.get('/:id', authenticateToken, serviceController.getService);
 router.post('/', authenticateToken, requireAdmin, validateLocationAccess, serviceController.upsertService);
 
 export default router;

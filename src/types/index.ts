@@ -152,3 +152,101 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+// Pricing Types
+export interface BasePrice {
+  base_price_id?: string;
+  location_id?: string;
+  name: string;
+  role: 'PRIMARY' | 'ADD_ON';
+  age_group_id: string;
+  subscription_term_id: string;
+  price: number;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface ServicePrice {
+  service_price_id?: string;
+  service_id: string;
+  location_id?: string;
+  age_group_id: string;
+  subscription_term_id: string;
+  price: number;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+// Membership Types
+export interface MembershipProgram {
+  membership_program_id?: string;
+  location_id?: string;
+  name: string;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface MembershipProgramCategory {
+  category_id?: string;
+  membership_program_id: string;
+  name: string;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface MembershipFee {
+  membership_fee_id?: string;
+  category_id: string;
+  fee_type: 'JOINING' | 'ANNUAL';
+  billing_cycle: 'ONE_TIME' | 'YEARLY';
+  amount: number;
+  is_active?: boolean;
+  created_at?: Date;
+}
+
+export interface MembershipEligibilityRule {
+  rule_id?: string;
+  category_id: string;
+  priority: number;
+  result: 'ALLOW' | 'DENY';
+  condition_json: {
+    minChild?: number;
+    maxChild?: number;
+    minInfant?: number;
+    maxInfant?: number;
+    minAdult?: number;
+    maxAdult?: number;
+    minSenior?: number;
+    maxSenior?: number;
+    [key: string]: any; // Allow extensibility
+  };
+  message?: string;
+}
+
+export interface MembershipService {
+  membership_service_id?: string;
+  membership_program_id: string;
+  category_id?: string | null;
+  service_id: string;
+  is_included?: boolean;
+  usage_limit?: string | null;
+  is_part_of_base_plan?: boolean;
+  is_active?: boolean;
+  discount?: string | null;
+}
+
+export interface DiscountCode {
+  discount_id?: string;
+  staff_id?: string | null;
+  location_id: string;
+  discount_code: string;
+  discount: string;
+  staff_name?: string | null;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}

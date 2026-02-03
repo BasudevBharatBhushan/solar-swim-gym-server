@@ -18,16 +18,40 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
   3. Generate JWT (`staff_id`, `role`, `location_id` (if not superadmin)).
 - **Response**: `{ "token": "...", "user": { ... } }`
 
-### 1.2 Account Authentication
-**POST** `/auth/account/login`
-- **Purpose**: Authenticate end-users (members).
-- **Payload**: `{ "email": "user@gmail.com", "password": "..." }`
-- **Logic**:
-  1. Find profile by email where `is_primary = true`.
-  2. Verify password.
-  3. **Note**: If user is associated with multiple accounts (rare, but possible), default to the most recent one or return a choice.
-  4. Generate JWT (`account_id`, `profile_id`, `location_id`).
-- **Response**: `{ "token": "...", "account": { ... } }`
+### 1.2 Account/User Registration & Activation
+**POST** `/auth/user/register`
+- **Purpose**: Register a new account with family members.
+- **Payload**: 
+  ```json
+  {
+    "location_id": "uuid",
+    "primary_profile": { 
+        "first_name": "...", 
+        "waiver_program_id": "...", 
+        "case_manager_name": "..." 
+    },
+    "family_members": [ 
+        { "first_name": "...", "waiver_program_id": "..." } 
+    ]
+  }
+  ```
+- **Logic**: Creates Account, Profiles (linked, email for primary). Waiver info is now per-profile.
+
+**GET** `/auth/user/activate`
+- **Purpose**: Validate activation token before prompting for password.
+- **Query Params**: `token=...`
+- **Response**: `{ "success": true, "message": "...", "account": { "account_id": "...", "email": "..." } }`
+
+**POST** `/auth/user/activate`
+- **Purpose**: Set password for the primary profile and activate account.
+- **Payload**: `{ "token": "...", "password": "..." }`
+- **Logic**: Validates token again, hashes password for primary profile, sets account status to `ACTIVE`, and marks token as used.
+
+**POST** `/auth/user/login`
+- **Purpose**: Authenticate end-users.
+- **Payload**: `{ "email": "...", "password": "..." }`
+- **Response**: `{ "token": "...", "user": { ... } }`
+- **JWT Claims**: `profile_id`, `account_id`, `location_id`, `type: 'user'`.
 
 ### 1.3 Session Context (Location)
 *Note: For Staff, `location_id` is often embedded in the token. For Superadmins managing multiple locations, they may need to switch context.*
@@ -165,7 +189,7 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
              "fees": [ { "type": "JOINING", "amount": 100 } ],
              "rules": [ { "condition": "min_members: 3", "result": "ALLOW" } ],
              "bundled_services": [ 
-                { "service_id": "...", "is_included": true } 
+                { "service_id": "...", "is_included": true, "discount": "20%", "usage_limit": "10 visits" } 
              ]
            }
         ]
@@ -214,59 +238,32 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
 - **Purpose**: Create or Update Lead.
 - **Payload**: `{ "lead_id": "optional-uuid", ... }`
 - **Logic**: If `lead_id` present -> Update, else -> Create.
-**POST** `/leads/reindex` (Cron/Admin)
-- **Logic**: Fetch all leads -> Bulk Insert to Elastic.
+**POST** `/leads/reindex`
+- **Purpose**: Rebuild Elasticsearch index for leads.
+- **Access**: Admin.
 
 ### 6.2 Accounts & Profiles
 **GET** `/accounts`
 - **Purpose**: List accounts (DB Paginated).
-- **Response**: `[{ account_id, primary_member_name, member_count, status }]`
-
+- **Access**: Controlled by isolation.
 **GET** `/accounts/search`
 - **Purpose**: Elasticsearch query for accounts/profiles.
-- **Query**: Search by name, email, phone of *any* member.
-- **Response**: List of matching Accounts.
-
-**GET** `/accounts/:id`
+**GET** `/accounts/:id` (Coming Soon)
 - **Purpose**: Full Account Detail View.
-- **Response Includes**:
-  - `account`: Basic info.
-  - `profiles`: List of all profiles (grouped by family).
-  - `subscriptions`: Active subscriptions.
-  - `invoices`: History.
-  - `waivers`: Status of signatures.
-
-**POST** `/accounts/upsert` (**Complex**)
-- **Purpose**: Create or Modify Account + Profiles in one go.
+**POST** `/accounts/upsert` (**Staff/Admin Operation**)
+- **Purpose**: Manual modification of Profiles within an existing Account.
 - **Payload**:
   ```json
   {
-    "account_id": "uuid (optional)",
+    "account_id": "uuid (REQUIRED)",
     "location_id": "...",
-    "primary_profile": { ... },
-    "family_members": [ { ... }, { ... } ],
-    "waiver_data": { ... }
+    "primary_profile": { "profile_id": "optional-uuid", ..., "waiver_program_id": "..." },
+    "family_members": [ { "profile_id": "optional-uuid", ..., "waiver_program_id": "..." } ]
   }
   ```
-- **Backend Logic**:
-  ```javascript
-  transaction {
-    if account_id:
-       update account
-    else:
-       create account
-    
-    upsert primary_profile (link to account)
-    
-    for each member in family_members:
-       if member.profile_id:
-          update profile
-       else:
-          create profile (link to account)
-          
-    // Handle specific logic for Minors (Guardian fields) - defined in Validation Layer
-  }
-  ```
+- **Logic**: 
+  - REQUIRES `account_id`. Does NOT create new accounts (use `/auth/user/register` for new accounts).
+  - For each profile in payload: If `profile_id` is present, Updates; otherwise Creates a new profile linked to the `account_id`.
 
 ### 6.3 Global Indexing
 **POST** `/cron/reindex-all`
@@ -278,29 +275,31 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
 ## 7. Billing & Subscriptions
 
 ### 7.1 Subscriptions
-**POST** `/subscriptions`
+**POST** `/billing/subscriptions`
 - **Purpose**: Create a NEW subscription.
-- **Note**: Subscriptions are immutable regarding their "Terms" once created. To change, cancel and create new.
 - **Payload**:
   ```json
   {
     "account_id": "...",
+    "location_id": "...",
+    "subscription_type": "BASE / MEMBERSHIP_FEE / ADDON_SERVICE",
+    "reference_id": "id (price_id, term_id, etc.)",
     "subscription_term_id": "...",
-    "items": [
-       { "type": "BASE", "reference_id": "price_id", "profile_ids": [...] },
-       { "type": "ADDON", "reference_id": "service_price_id", "profile_ids": [...] }
+    "unit_price_snapshot": 29.99,
+    "total_amount": 29.99,
+    "billing_period_start": "YYYY-MM-DD",
+    "billing_period_end": "YYYY-MM-DD",
+    "coverage": [
+       { "profile_id": "...", "role": "PRIMARY / ADD_ON" }
     ]
   }
   ```
-- **Logic**:
-  1. Calculate totals.
-  2. Create `invoice` (DRAFT).
-  3. Create `subscription` records.
-  4. Create `subscription_coverage` records for each profile.
-  5. Return Invoice ID for payment.
+- **Logic**: Creates a `subscription` record and associated `subscription_coverage` links.
 
-**GET** `/subscriptions/:id`
-- Fetch details.
+**GET** `/billing/accounts/:accountId/subscriptions`
+- **Purpose**: List all subscriptions (with coverage details) for a specific account.
+- **Required**: `accountId` in URL.
+- **Response**: List of subscriptions including nested coverage and profile details.
 
 ### 7.2 Invoices & Payments
 **GET** `/invoices/:id`
@@ -314,3 +313,33 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
 ### 7.3 Waiver Programs
 **GET** `/waivers`
 **POST** `/waivers`
+
+---
+
+## 8. Discounts & Promotions
+
+### 8.1 Discount Codes
+**GET** `/discounts`
+- **Purpose**: Fetch all discount codes for the current location.
+- **Access**: Staff/Admin.
+- **Response**: List of `discount_codes`.
+
+**POST** `/discounts`
+- **Purpose**: Create or Update a discount code.
+- **Access**: Admin.
+- **Payload**:
+  ```json
+  {
+    "discount_id": "optional-uuid",
+    "discount_code": "WINTER6",
+    "discount": "6% / 6",
+    "staff_name": "...",
+    "is_active": true
+  }
+  ```
+- **Logic**: Upsert based on `discount_id`. Uses `location_id` from session context.
+
+**GET** `/discounts/validate/:code`
+- **Purpose**: Validate a code and return its value if valid and active.
+- **Access**: Authenticated.
+- **Logic**: Search by `code` and `location_id`.

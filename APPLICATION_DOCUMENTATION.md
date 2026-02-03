@@ -251,6 +251,13 @@ Configuration includes:
 
 This supports regional, government, or partner-funded clients with unique workflows.
 
+#### 4.5 Discount Codes & Promotions
+Admins can create promotional codes to be used during checkout or subscription creation.
+- **Custom Codes**: Define unique alphanumeric strings (e.g., WINTER6).
+- **Flexible Values**: Support for percentage-based (e.g., 6%) or flat-rate (e.g., 6) discounts.
+- **Tracking**: Each code stores the name of the staff member who created it for audit purposes.
+- **Status Control**: Codes can be toggled active/inactive without deletion.
+
 ### 5. Deployment, Training & Support
 - **Frontend**: React
 - **Backend APIs**: Node (Hosted in Vercel) Approx $60/mo

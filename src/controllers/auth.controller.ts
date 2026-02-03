@@ -26,40 +26,22 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
   try {
     const {
       location_id,
-      first_name,
-      last_name,
-      email,
-      date_of_birth,
-      guardian_name,
-      guardian_mobile,
-      emergency_contact_name,
-      emergency_contact_phone,
-      waiver_program_id,
-      case_manager_name,
-      case_manager_email
+      primary_profile,
+      family_members
     } = req.body;
 
     // Validation
-    if (!location_id || !first_name || !last_name || !email || !date_of_birth) {
+    if (!location_id || !primary_profile?.first_name || !primary_profile?.last_name || !primary_profile?.email || !primary_profile?.date_of_birth) {
       res.status(400).json({ 
-        error: 'Missing required fields: location_id, first_name, last_name, email, date_of_birth' 
+        error: 'Missing required fields: location_id, primary_profile with first_name, last_name, email, date_of_birth' 
       });
       return;
     }
 
     const result = await authService.registerUser({
       location_id,
-      first_name,
-      last_name,
-      email,
-      date_of_birth,
-      guardian_name,
-      guardian_mobile,
-      emergency_contact_name,
-      emergency_contact_phone,
-      waiver_program_id,
-      case_manager_name,
-      case_manager_email
+      primary_profile,
+      family_members
     });
 
     res.status(201).json({
@@ -96,6 +78,26 @@ export const activateAccount = async (req: Request, res: Response): Promise<void
     res.json(result);
   } catch (err: unknown) {
     console.error('Error in activateAccount:', err);
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
+/**
+ * Validate Activation Token (GET route)
+ */
+export const validateToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      res.status(400).json({ error: 'Token is required' });
+      return;
+    }
+
+    const result = await authService.validateActivationToken(token as string);
+    res.json(result);
+  } catch (err: unknown) {
+    console.error('Error in validateToken:', err);
     res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
@@ -168,6 +170,7 @@ export default {
   staffLogin,
   registerUser,
   activateAccount,
+  validateToken,
   accountLogin,
   getActivationToken,
   createStaff

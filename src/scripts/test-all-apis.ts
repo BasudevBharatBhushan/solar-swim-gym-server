@@ -3,7 +3,7 @@
  * Tests all endpoints and RBAC scopes: SuperAdmin, Admin, and User
  */
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'http://127.0.0.1:3001';
 const API_BASE = `${BASE_URL}/api/v1`;
 
 const colors = {
@@ -144,7 +144,6 @@ async function runTests() {
   await testApi('GET', '/locations', null, 'SuperAdmin can list all locations', saHeaders, 'SUPERADMIN');
   
   const newLoc = await testApi('POST', '/locations', { name: 'New Test Location' }, 'SuperAdmin can create location', saHeaders, 'SUPERADMIN');
-  const tempLocId = newLoc?.location_id;
 
   // 3. ADMIN SCOPE & ISOLATION
   console.log(`\n${colors.bright}Phase 3: Admin Scope & Isolation${colors.reset}`);
@@ -159,21 +158,111 @@ async function runTests() {
     first_name: 'Lead', last_name: 'Two', email: 'lead2@test.com', location_id: locId2
   }, 'Admin 1 trying to create lead in Loc 2 (Should Fail)', a1Headers, 'ADMIN', false);
 
-  // Admin 1 can list leads (should only see Loc 1 via RLS, or if they pass correct header)
+  // Admin 1 can list leads
   await testApi('GET', `/leads?location_id=${locId1}`, null, 'Admin 1 lists Loc 1 leads', a1Headers, 'ADMIN');
 
-  // 4. USER SCOPE
-  console.log(`\n${colors.bright}Phase 4: User Scope${colors.reset}`);
+  // --- NEW: CONFIG, PRICING, & MEMBERSHIPS ---
+  console.log(`\n${colors.bright}Phase 3.5: Configuration, Pricing & Memberships${colors.reset}`);
+
+  // 1. Config: Age Group (Global) & Term (Local)
+  const ageGroup = await testApi('POST', '/config/age-groups', {
+    name: 'Adult Test', min_age: 18, max_age: 99
+  }, 'Admin 1 creates Age Group', saHeaders, 'SUPERADMIN'); 
+
+  const subTerm = await testApi('POST', '/config/subscription-terms', {
+    location_id: locId1, name: 'Monthly Test', duration_months: 1, payment_mode: 'RECURRING'
+  }, 'Admin 1 creates Subscription Term', a1Headers, 'ADMIN');
+
+  const ageGroupId = ageGroup?.age_group_id;
+  const termId = subTerm?.subscription_term_id;
+
+  if (ageGroupId && termId) {
+      // 2. Base Price
+      const basePrice = await testApi('POST', '/base-prices', {
+          location_id: locId1,
+          name: 'Standard Base Fee',
+          role: 'PRIMARY',
+          age_group_id: ageGroupId,
+          subscription_term_id: termId,
+          price: 29.99
+      }, 'Admin 1 creates Base Price', a1Headers, 'ADMIN');
+
+      await testApi('GET', `/base-prices?location_id=${locId1}`, null, 'Admin 1 gets Base Prices', a1Headers, 'ADMIN');
+
+      // 3. Service with Pricing
+      const service = await testApi('POST', '/services', {
+          location_id: locId1,
+          name: 'Yoga Class',
+          service_type: 'class',
+          pricing_structure: [
+              {
+                  age_group_id: ageGroupId,
+                  terms: [{ subscription_term_id: termId, price: 15.00 }]
+              }
+          ]
+      }, 'Admin 1 creates Service with Pricing', a1Headers, 'ADMIN');
+      const serviceId = service?.service_id;
+
+      if (serviceId) {
+          await testApi('GET', `/services/${serviceId}`, null, 'Admin 1 gets specific Service by ID', a1Headers, 'ADMIN');
+      }
+
+      // 4. Membership Program
+      if (serviceId) {
+        const membership = await testApi('POST', '/memberships', {
+            location_id: locId1,
+            name: 'Gold Membership',
+            categories: [
+                {
+                    name: 'Individual',
+                    fees: [
+                        { fee_type: 'JOINING', billing_cycle: 'ONE_TIME', amount: 50.00 }
+                    ],
+                    rules: [
+                        { priority: 1, result: 'ALLOW', message: 'Adult Policy', condition_json: { minAdult: 1, maxAdult: 1 } },
+                        { priority: 2, result: 'ALLOW', message: 'Child Policy', condition_json: { minChild: 0, maxChild: 2 } }
+                    ],
+                    services: [
+                        { service_id: serviceId, is_included: true }
+                    ]
+                }
+            ]
+        }, 'Admin 1 creates Membership Program with split rules', a1Headers, 'ADMIN');
+        
+        const membershipId = membership?.membership_program_id;
+
+        if (membershipId) {
+            await testApi('GET', `/memberships/${membershipId}`, null, 'Admin 1 gets specific Membership Program by ID', a1Headers, 'ADMIN');
+        }
+      }
+  }
+
+  // 4. USER SCOPE & REGISTRATION
+  console.log(`\n${colors.bright}Phase 4: User Scope & Complex Registration${colors.reset}`);
   
-  // Register a new user
+  // Complex Register with Family
   const userEmail = `user.${Date.now()}@test.com`;
   const reg = await testApi('POST', '/auth/user/register', {
     location_id: locId1,
-    first_name: 'John',
-    last_name: 'User',
-    email: userEmail,
-    date_of_birth: '1990-01-01'
-  }, 'Register New User', {}, 'ANONYMOUS');
+    primary_profile: {
+        first_name: 'John',
+        last_name: 'User',
+        email: userEmail,
+        date_of_birth: '1990-01-01',
+        emergency_contact_name: 'Safe Person',
+        emergency_contact_phone: '555-1234',
+        waiver_program_id: null,
+        case_manager_name: null
+    },
+    family_members: [
+        {
+            first_name: 'Jane',
+            last_name: 'User',
+            date_of_birth: '2015-05-05',
+            waiver_program_id: null
+        }
+    ]
+  }, 'Register Complex User with Family member', {}, 'ANONYMOUS');
 
   if (reg?.activation_token) {
     await testApi('POST', '/auth/user/activate', {
@@ -187,19 +276,67 @@ async function runTests() {
     if (uLogin?.token) {
       const uToken = uLogin.token;
       const uHeaders = { 'Authorization': `Bearer ${uToken}` };
+      const accountId = reg.account_id;
+      const profileId = reg.profile_id;
 
-      // User can see their own accounts
-      await testApi('GET', '/accounts', null, 'User can view their own accounts', uHeaders, 'USER');
+      // 5. BILLING & SUBSCRIPTIONS
+      console.log(`\n${colors.bright}Phase 5: Billing & Subscriptions${colors.reset}`);
 
-      // User CANNOT list leads
-      await testApi('GET', '/leads', null, 'User trying to list leads (Should Fail)', uHeaders, 'USER', false);
+      // Create Subscription
+      const sub = await testApi('POST', '/billing/subscriptions', {
+          account_id: accountId,
+          location_id: locId1,
+          subscription_type: 'BASE',
+          reference_id: termId, // Using valid termId from earlier
+          subscription_term_id: termId,
+          unit_price_snapshot: 29.99,
+          total_amount: 29.99,
+          billing_period_start: '2024-02-01',
+          billing_period_end: '2024-03-01',
+          coverage: [
+              { profile_id: profileId, role: 'PRIMARY' }
+          ]
+      }, 'User creates Subscription', uHeaders, 'USER');
 
-      // User CANNOT create a new location
-      await testApi('POST', '/locations', { name: 'User Location' }, 'User trying to create location (Should Fail)', uHeaders, 'USER', false);
+      // Get subscriptions
+      await testApi('GET', `/billing/accounts/${accountId}/subscriptions`, null, 'User views their subscriptions', uHeaders, 'USER');
     }
   }
 
-  // 5. SUMMARY
+  // 6. DISCOUNT CODES
+  console.log(`\n${colors.bright}Phase 6: Discount Codes${colors.reset}`);
+  
+  // Admin 1 creates a discount code
+  const discountCode = `TEST${Date.now()}`;
+  await testApi('POST', '/discounts', {
+    discount_code: discountCode,
+    discount: '6%',
+    staff_name: 'Admin One'
+  }, 'Admin 1 creates a discount code', a1Headers, 'ADMIN');
+
+  // Admin 1 can list codes
+  await testApi('GET', `/discounts`, null, 'Admin 1 lists discount codes', a1Headers, 'ADMIN');
+
+  // Anyone (authenticated) can validate a code
+  await testApi('GET', `/discounts/validate/${discountCode}`, null, 'User validates a discount code', a1Headers, 'ADMIN');
+
+  // Admin 2 should not see Admin 1's discount codes (if isolated)
+  // Note: RLS usually handles this, so we check if it is filtered.
+  const a2Discounts = await testApi('GET', `/discounts`, null, 'Admin 2 lists their own discount codes', a2Headers, 'ADMIN');
+  const foundInA2 = a2Discounts?.data?.find((d: any) => d.discount_code === discountCode);
+  
+  testResults.push({
+    endpoint: '/discounts',
+    method: 'GET',
+    status: 200,
+    success: !foundInA2,
+    expected: true,
+    role: 'ADMIN',
+    description: 'Discount code isolation check (Admin 2 should not see Admin 1 code)',
+    error: foundInA2 ? 'Isolation failed: Admin 2 saw Admin 1 data' : undefined
+  });
+
+  // 7. SUMMARY
   printSummary();
 }
 

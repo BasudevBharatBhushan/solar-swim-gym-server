@@ -97,24 +97,21 @@ interface WaiverData {
 }
 
 const upsertProfileHelper = async (
-  profileData: ProfileData, 
-  waiverData?: WaiverData
+  profileData: ProfileData & WaiverData
 ): Promise<void> => {
   const { 
     profile_id, account_id, location_id, first_name, last_name, date_of_birth, 
     email, is_primary, guardian_name, guardian_mobile, emergency_contact_name, 
-    emergency_contact_phone 
+    emergency_contact_phone, waiver_program_id, case_manager_name, case_manager_email
   } = profileData;
-  
-  const waiver_program_id = (waiverData && waiverData.waiver_program_id) || null;
-  const case_manager_name = (waiverData && waiverData.case_manager_name) || null;
-  const case_manager_email = (waiverData && waiverData.case_manager_email) || null;
   
   const payload: Profile = {
     account_id, location_id, first_name, last_name, date_of_birth, email,
     is_primary: is_primary || false,
     guardian_name, guardian_mobile, emergency_contact_name, emergency_contact_phone,
-    waiver_program_id, case_manager_name, case_manager_email
+    waiver_program_id: waiver_program_id || null, 
+    case_manager_name: case_manager_name || null, 
+    case_manager_email: case_manager_email || null
   };
 
   if (profile_id) {
@@ -131,39 +128,27 @@ const upsertProfileHelper = async (
 interface UpsertAccountData {
   account_id?: string;
   location_id: string;
-  primary_profile?: ProfileData;
-  family_members?: ProfileData[];
-  waiver_data?: WaiverData;
+  primary_profile?: ProfileData & WaiverData;
+  family_members?: (ProfileData & WaiverData)[];
 }
 
 export const upsertAccount = async (data: UpsertAccountData): Promise<{ account_id: string }> => {
-  const { account_id, location_id, primary_profile, family_members, waiver_data } = data;
+  const { account_id, location_id, primary_profile, family_members } = data;
     
+  if (!account_id) throw new Error('Account ID is required. UpsertAccount cannot create new accounts.');
   if (!location_id) throw new Error('Location ID required');
 
-  let finalAccountId = account_id;
-
-  // 1. Account
-  if (!account_id) {
-    const { data: newAccount, error: accError } = await supabase
-      .from('account')
-      .insert({ location_id, status: 'PENDING' })
-      .select('account_id')
-      .single();
-      
-    if (accError) throw new Error(accError.message);
-    finalAccountId = newAccount.account_id;
-  }
+  const finalAccountId = account_id;
 
   // 2. Primary Profile
   if (primary_profile) {
-    await upsertProfileHelper({ ...primary_profile, account_id: finalAccountId, location_id, is_primary: true }, waiver_data);
+    await upsertProfileHelper({ ...primary_profile, account_id: finalAccountId, location_id, is_primary: true });
   }
 
   // 3. Family Members
   if (family_members && Array.isArray(family_members)) {
     for (const member of family_members) {
-      await upsertProfileHelper({ ...member, account_id: finalAccountId, location_id, is_primary: false }, waiver_data);
+      await upsertProfileHelper({ ...member, account_id: finalAccountId, location_id, is_primary: false });
     }
   }
 

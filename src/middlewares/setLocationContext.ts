@@ -23,7 +23,19 @@ export const setLocationContext = async (
     if (locationId) {
       // Store in request object for use in controllers/services
       req.locationId = locationId;
-      console.log(`✓ Location context set: ${locationId}`);
+      console.log(`✓ Location context set: ${locationId} (Source: ${req.headers['x-location-id'] ? 'Header' : req.body?.location_id ? 'Body' : 'JWT'})`);
+      if (req.user) console.log(`  User Type: ${req.user.type}, User Loc: ${req.user.location_id}`);
+
+      // Attempt to set session variable in Postgres (for RLS)
+      try {
+        await (await import('../config/db')).default.rpc('set_config', { 
+            name: 'app.current_location_id', 
+            value: locationId, 
+            is_local: false 
+        });
+      } catch (err) {
+        // Fallback or ignore if rpc fails (it might if not defined)
+      }
     } else {
       console.log('⚠ No location_id found in request');
     }

@@ -176,7 +176,28 @@ Pricing for add-on services.
 
 ---
 
-## **5. Membership Configuration**
+## **5. Discounts & Promotions**
+
+### **Table: `discount_codes`**
+Promotional codes that can be applied to subscriptions or invoices.
+
+| Field Name | Type | Description | Key / Constraint |
+| :--- | :--- | :--- | :--- |
+| `discount_id` | `UUID` | Unique identifier. | **PK**, Default: `gen_random_uuid()` |
+| `location_id` | `UUID` | Location scope. | **FK** -> `location`, `NOT NULL` |
+| `staff_id` | `UUID` | Staff member who created the code. | **FK** -> `staff` |
+| `discount_code` | `TEXT` | The unique string used to claim the discount. | `UNIQUE`, `NOT NULL` |
+| `discount` | `TEXT` | The value (e.g., "6%" or "6"). | `NOT NULL` |
+| `staff_name` | `TEXT` | Denormalized snapshot of the creator's name. | |
+| `is_active` | `BOOLEAN` | If false, the code cannot be used. | Default: `TRUE` |
+| `created_at` | `TIMESTAMP` | Record creation timestamp. | Default: `NOW()` |
+| `updated_at` | `TIMESTAMP` | Last update timestamp. | Default: `NOW()` |
+
+**RLS Policy**: Filter by `location_id`.
+
+---
+
+## **6. Membership Configuration**
 
 ### **Table: `membership_program`**
 High-level membership grouping (e.g., "Standard Club Access").
@@ -240,16 +261,16 @@ Services bundled into a membership.
 | `category_id` | `UUID` | Specific category override. | **FK** -> `membership_program_category` |
 | `service_id` | `UUID` | The included service. | **FK** -> `service`, `NOT NULL` |
 | `is_included` | `BOOLEAN` | Whether it is free/included. | Default: `TRUE` |
-| `usage_limit` | `INT` | Cap on usage (e.g., 10 visits). | |
+| `usage_limit` | `TEXT` | Cap on usage (e.g., "10 visits"). | |
 | `is_part_of_base_plan` | `BOOLEAN` | Core plan component? | Default: `FALSE` |
 | `is_active` | `BOOLEAN` | Availability flag. | Default: `TRUE` |
-| `discount` | `DECIMAL` | Discount amount/percent if not fully free.| |
+| `discount` | `TEXT` | Discount amount/percent (e.g., "6%", "20").| |
 
 **RLS Policy**: Filter by `location_id` (via Program).
 
 ---
 
-## **6. Billing & Subscriptions**
+## **7. Billing & Subscriptions**
 
 ### **Table: `invoice`**
 Financial record for a transaction.
@@ -318,7 +339,7 @@ Links specific profiles to a subscription.
 
 ---
 
-## **7. Reference Tables**
+## **8. Reference Tables**
 
 ### **Table: `waiver_program`**
 External funding programs (e.g., RCBE).

@@ -140,7 +140,56 @@ export const upsertService = async (data: UpsertServiceData): Promise<ServiceWit
     return allServices.find(s => s.service_id === finalServiceId);
 };
 
+export const getServiceById = async (serviceId: string): Promise<ServiceWithPricing | null> => {
+   if (!serviceId) throw new Error('Service ID required');
+
+   const { data: service, error: svcError } = await supabase
+    .from('service')
+    .select('*')
+    .eq('service_id', serviceId)
+    .single();
+
+   if (svcError) throw new Error(svcError.message);
+   if (!service) return null;
+
+   const { data: prices, error: priceError } = await supabase
+    .from('service_price')
+    .select('*')
+    .eq('service_id', serviceId);
+    
+   if (priceError) throw new Error(priceError.message);
+
+   const { data: ageGroups } = await supabase.from('age_group').select('*');
+   const { data: terms } = await supabase.from('subscription_term').select('*');
+
+   const ageGroupMap = new Map(ageGroups?.map(ag => [ag.age_group_id, ag.name]));
+   const termMap = new Map(terms?.map(t => [t.subscription_term_id, t.name]));
+
+   const grouped: Record<string, PricingGroup> = {};
+   for (const p of prices || []) {
+      if (!grouped[p.age_group_id]) {
+        grouped[p.age_group_id] = {
+          age_group_id: p.age_group_id,
+          age_group_name: ageGroupMap.get(p.age_group_id) || 'Unknown',
+          terms: []
+        };
+      }
+      grouped[p.age_group_id].terms.push({
+        subscription_term_id: p.subscription_term_id,
+        term_name: termMap.get(p.subscription_term_id) || 'Unknown',
+        price: p.price,
+        price_id: p.service_price_id
+      });
+   }
+    
+   return {
+      ...service,
+      pricing_structure: Object.values(grouped)
+   };
+};
+
 export default {
   getAllServices,
-  upsertService
+  upsertService,
+  getServiceById
 };

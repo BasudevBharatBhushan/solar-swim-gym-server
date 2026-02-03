@@ -1,15 +1,35 @@
 import supabase from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Staff, AuthResponse } from '../types';
+import { Staff, AuthResponse, Profile } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_123';
+
+interface ProfileData {
+  profile_id?: string;
+  account_id?: string;
+  location_id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  email?: string;
+  is_primary?: boolean;
+  guardian_name?: string;
+  guardian_mobile?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+}
+
+interface WaiverData {
+  waiver_program_id?: string;
+  case_manager_name?: string;
+  case_manager_email?: string;
+}
 
 /**
  * Staff Login
  */
 export const staffLogin = async (email: string, password: string): Promise<AuthResponse> => {
-  // Set location context will be handled by middleware after login
   const { data: staff, error } = await supabase
     .from('staff')
     .select('*')
@@ -26,13 +46,11 @@ export const staffLogin = async (email: string, password: string): Promise<AuthR
     throw new Error('Account suspended');
   }
 
-  // Verify password
   const match = await bcrypt.compare(password, staffRecord.password_hash || '');
   if (!match) {
     throw new Error('Invalid credentials');
   }
 
-  // Create JWT token with location_id
   const token = jwt.sign(
     { 
       staff_id: staffRecord.staff_id, 
@@ -44,7 +62,6 @@ export const staffLogin = async (email: string, password: string): Promise<AuthR
     { expiresIn: '24h' }
   );
 
-  // Remove password hash from response
   const { password_hash: _, ...staffWithoutPassword } = staffRecord;
 
   return { 
@@ -53,41 +70,65 @@ export const staffLogin = async (email: string, password: string): Promise<AuthR
   };
 };
 
+const upsertProfileHelper = async (
+  profileData: ProfileData & WaiverData
+): Promise<string> => {
+  const { 
+    profile_id, account_id, location_id, first_name, last_name, date_of_birth, 
+    email, is_primary, guardian_name, guardian_mobile, emergency_contact_name, 
+    emergency_contact_phone, waiver_program_id, case_manager_name, case_manager_email
+  } = profileData;
+  
+  const payload: any = {
+    account_id, location_id, first_name, last_name, date_of_birth, email,
+    is_primary: is_primary || false,
+    guardian_name, guardian_mobile, emergency_contact_name, emergency_contact_phone,
+    waiver_program_id: waiver_program_id || null, 
+    case_manager_name: case_manager_name || null, 
+    case_manager_email: case_manager_email || null
+  };
+
+  if (profile_id) {
+    payload.profile_id = profile_id;
+  }
+
+  const { data, error } = await supabase
+    .from('profile')
+    .upsert(payload, { onConflict: 'profile_id' })
+    .select('profile_id')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data.profile_id;
+};
+
 /**
  * User/Account Registration
- * Creates account, primary profile, and sends activation email
+ * Creates account, primary profile, and family members
  */
-export const registerUser = async (userData: {
+export const registerUser = async (data: {
   location_id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  date_of_birth: string;
-  guardian_name?: string;
-  guardian_mobile?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  waiver_program_id?: string;
-  case_manager_name?: string;
-  case_manager_email?: string;
+  primary_profile: ProfileData & WaiverData;
+  family_members?: (ProfileData & WaiverData)[];
 }): Promise<{ account_id: string; profile_id: string; activation_token: string }> => {
-  
+  const { location_id, primary_profile, family_members } = data;
+
   // Check if email already exists
   const { data: existingProfile } = await supabase
     .from('profile')
     .select('profile_id')
-    .eq('email', userData.email)
+    .eq('email', primary_profile.email)
     .single();
 
   if (existingProfile) {
     throw new Error('Email already registered');
   }
 
-  // Create account
+  // 1. Create account
   const { data: account, error: accountError } = await supabase
     .from('account')
     .insert({
-      location_id: userData.location_id,
+      location_id,
       status: 'PENDING'
     })
     .select()
@@ -97,34 +138,21 @@ export const registerUser = async (userData: {
     throw new Error('Failed to create account: ' + accountError?.message);
   }
 
-  // Create primary profile (without password initially)
-  const { data: profile, error: profileError } = await supabase
-    .from('profile')
-    .insert({
-      account_id: account.account_id,
-      location_id: userData.location_id,
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      email: userData.email,
-      date_of_birth: userData.date_of_birth,
-      is_primary: true,
-      is_active: true,
-      guardian_name: userData.guardian_name,
-      guardian_mobile: userData.guardian_mobile,
-      emergency_contact_name: userData.emergency_contact_name,
-      emergency_contact_phone: userData.emergency_contact_phone,
-      waiver_program_id: userData.waiver_program_id,
-      case_manager_name: userData.case_manager_name,
-      case_manager_email: userData.case_manager_email
-    })
-    .select()
-    .single();
+  // 2. Create primary profile (without password initially)
+  const profileId = await upsertProfileHelper(
+    { ...primary_profile, account_id: account.account_id, location_id, is_primary: true }
+  );
 
-  if (profileError || !profile) {
-    throw new Error('Failed to create profile: ' + profileError?.message);
+  // 3. Create family members
+  if (family_members && Array.isArray(family_members)) {
+    for (const member of family_members) {
+      await upsertProfileHelper(
+        { ...member, account_id: account.account_id, location_id, is_primary: false }
+      );
+    }
   }
 
-  // Create activation token (expires in 24 hours)
+  // 4. Create activation token
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);
 
@@ -142,14 +170,10 @@ export const registerUser = async (userData: {
     throw new Error('Failed to create activation token: ' + tokenError?.message);
   }
 
-  // TODO: Send activation email with token
-  // For now, return the token for testing
-  console.log(`✉️ Activation email would be sent to: ${userData.email}`);
-  console.log(`🔑 Activation token: ${tokenData.token}`);
-
+  console.log(`✉️ Activation email would be sent to: ${primary_profile.email}`);
   return {
     account_id: account.account_id,
-    profile_id: profile.profile_id,
+    profile_id: profileId,
     activation_token: tokenData.token
   };
 };
@@ -161,8 +185,6 @@ export const activateAccount = async (
   token: string,
   password: string
 ): Promise<{ success: boolean; message: string }> => {
-  
-  // Find the token
   const { data: tokenData, error: tokenError } = await supabase
     .from('account_activation_tokens')
     .select('*, account!inner(account_id, location_id)')
@@ -174,17 +196,14 @@ export const activateAccount = async (
     throw new Error('Invalid or expired activation token');
   }
 
-  // Check if token is expired
   const now = new Date();
   const expiresAt = new Date(tokenData.expires_at);
   if (now > expiresAt) {
     throw new Error('Activation token has expired');
   }
 
-  // Hash the password
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Update the primary profile with password
   const { error: updateError } = await supabase
     .from('profile')
     .update({ password: passwordHash })
@@ -195,7 +214,6 @@ export const activateAccount = async (
     throw new Error('Failed to set password: ' + updateError.message);
   }
 
-  // Update account status to ACTIVE
   const { error: accountUpdateError } = await supabase
     .from('account')
     .update({ status: 'ACTIVE' })
@@ -205,7 +223,6 @@ export const activateAccount = async (
     throw new Error('Failed to activate account: ' + accountUpdateError.message);
   }
 
-  // Mark token as used
   await supabase
     .from('account_activation_tokens')
     .update({ is_used: true })
@@ -218,11 +235,50 @@ export const activateAccount = async (
 };
 
 /**
+ * Validate activation token
+ */
+export const validateActivationToken = async (
+  token: string
+): Promise<{ success: boolean; message: string; account?: { account_id: string; email: string } }> => {
+  const { data: tokenData, error: tokenError } = await supabase
+    .from('account_activation_tokens')
+    .select('*, account!inner(account_id, location_id)')
+    .eq('token', token)
+    .eq('is_used', false)
+    .single();
+
+  if (tokenError || !tokenData) {
+    throw new Error('Invalid or expired activation token');
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(tokenData.expires_at);
+  if (now > expiresAt) {
+    throw new Error('Activation token has expired');
+  }
+
+  // Get primary email for this account
+  const { data: profile } = await supabase
+    .from('profile')
+    .select('email')
+    .eq('account_id', tokenData.account_id)
+    .eq('is_primary', true)
+    .single();
+
+  return {
+    success: true,
+    message: 'Token is valid',
+    account: {
+      account_id: tokenData.account_id,
+      email: profile?.email || ''
+    }
+  };
+};
+
+/**
  * User/Account Login
  */
 export const accountLogin = async (email: string, password: string): Promise<AuthResponse> => {
-  
-  // Find the primary profile
   const { data: profile, error } = await supabase
     .from('profile')
     .select('*, account!inner(account_id, location_id, status)')
@@ -234,7 +290,6 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
     throw new Error('Invalid credentials');
   }
 
-  // Check if account is active
   if ((profile.account as { status: string }).status !== 'ACTIVE') {
     throw new Error('Account not activated. Please check your email for activation link.');
   }
@@ -243,7 +298,6 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
     throw new Error('Profile is inactive');
   }
 
-  // Verify password
   if (!profile.password) {
     throw new Error('Password not set. Please activate your account.');
   }
@@ -253,7 +307,6 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
     throw new Error('Invalid credentials');
   }
 
-  // Create JWT token with location_id
   const token = jwt.sign(
     { 
       profile_id: profile.profile_id,
@@ -265,12 +318,11 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
     { expiresIn: '24h' }
   );
 
-  // Remove password from response
   const { password: _, ...profileWithoutPassword } = profile;
 
   return { 
     token, 
-    staff: profileWithoutPassword as unknown as Staff // Using staff field for compatibility
+    staff: profileWithoutPassword as unknown as Staff
   };
 };
 
@@ -316,7 +368,6 @@ export const createStaff = async (staffData: {
   password: string;
   role: 'SUPERADMIN' | 'ADMIN' | 'STAFF';
 }): Promise<Staff> => {
-  // Hash password
   const passwordHash = await bcrypt.hash(staffData.password, 10);
 
   const { data, error } = await supabase
@@ -346,7 +397,7 @@ export default {
   accountLogin,
   registerUser,
   activateAccount,
+  validateActivationToken,
   getActivationToken,
   createStaff
 };
-
