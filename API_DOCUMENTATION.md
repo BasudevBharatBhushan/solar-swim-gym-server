@@ -18,6 +18,11 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
   3. Generate JWT (`staff_id`, `role`, `location_id` (if not superadmin)).
 - **Response**: `{ "token": "...", "user": { ... } }`
 
+**GET** `/auth/staff/all` (Superadmin only)
+- **Purpose**: Fetch all staff across all locations.
+- **Access**: SUPERADMIN.
+- **Response**: List of staff objects (excluding password hashes).
+
 ### 1.2 Account/User Registration & Activation
 **POST** `/auth/user/register`
 - **Purpose**: Register a new account with family members.
@@ -172,40 +177,63 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
   }
   ```
 
-## 5. Membership Engine
-
-### 5.1 Fetch Membership Configuration
-**GET** `/memberships/matrix`
-- **Purpose**: Fetch full hierarchy in a structured format.
+### 4.2 Base Pricing & Bundles
+**GET** `/base-prices`
+- **Purpose**: Fetch base plan pricing and global bundled services.
 - **Response**:
   ```json
   {
-    "programs": [
+    "prices": [
       {
-        "id": "...", "name": "Gold Club",
-        "categories": [
-           { 
-             "id": "...", "name": "Family",
-             "fees": [ { "type": "JOINING", "amount": 100 } ],
-             "rules": [ { "condition": "min_members: 3", "result": "ALLOW" } ],
-             "bundled_services": [ 
-                { "service_id": "...", "is_included": true, "discount": "20%", "usage_limit": "10 visits" } 
-             ]
-           }
-        ]
+        "base_price_id": "...",
+        "role": "PRIMARY",
+        "price": 50.00,
+        "age_group_name": "Adult",
+        "term_name": "Monthly"
       }
+    ],
+    "bundled_services": [
+       { "service_id": "...", "is_included": true, "usage_limit": "Unlimited" }
     ]
   }
   ```
+- **Note**: `bundled_services` here are those available to all Base Plan members (where `membership_program_id` is NULL).
+
+## 5. Membership Engine
+
+### 5.1 Fetch Membership Configuration
+**GET** `/memberships`
+- **Purpose**: Fetch full hierarchy in a structured format.
+- **Response**:
+  ```json
+  [
+    {
+      "membership_program_id": "...", "name": "Gold Club",
+      "services": [
+         { "service_id": "...", "is_included": true, "discount": "20%", "usage_limit": "10 visits" }
+      ],
+      "categories": [
+         { 
+           "category_id": "...", "name": "Family",
+           "fees": [ { "type": "JOINING", "amount": 100 } ],
+           "rules": [ { "condition": "min_members: 3", "result": "ALLOW" } ]
+         }
+      ]
+    }
+  ]
+  ```
 
 ### 5.2 Configure Membership (Batch Upsert)
-**POST** `/memberships/configuration`
+**POST** `/memberships`
 - **Purpose**: Create or Update the entire membership structure for a program.
 - **Payload**: Matches the response structure of `GET`.
 - **Backend Logic**:
   ```javascript
   transaction {
      upsert MembershipProgram
+     // Upsert Program Services (no longer at category level)
+     upsert membership_service where membership_program_id = ...
+     
      for each Category:
         upsert MembershipProgramCategory
         
@@ -216,10 +244,6 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
         // Sync Rules
         delete rules where category_id = ... AND id NOT IN input.rule_ids
         upsert rules
-        
-        // Sync Services
-        delete membership_service where category_id = ... AND id NOT IN input.service_ids
-        upsert membership_service
   }
   ```
 

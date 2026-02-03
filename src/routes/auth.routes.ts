@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import authController from '../controllers/auth.controller';
 import { authenticateToken } from '../middlewares/auth';
-import { requireAdmin } from '../middlewares/authorize';
+import { requireAdmin, requireSuperAdmin } from '../middlewares/authorize';
 
 const router = Router();
 
 // Staff Authentication
 router.post('/staff/login', authController.staffLogin);
 router.post('/staff/create', authenticateToken, requireAdmin, authController.createStaff);
+router.get('/staff/all', authenticateToken, requireSuperAdmin, authController.getAllStaff);
 
 // User/Account Authentication
 router.post('/user/register', authController.registerUser);

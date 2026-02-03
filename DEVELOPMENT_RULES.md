@@ -1,0 +1,100 @@
+# Solar Swim Gym — Development Rules & Guidelines
+
+This document serves as the **source of truth** for development workflows, coding standards, and documentation requirements. All contributors must adhere to these rules to ensure consistency, stability, and maintainability of the codebase.
+
+---
+
+## 1. Database Modifications
+
+**Rule:** The database schema is the backbone of the application. Any change to it must be rigorously documented and reproducible.
+
+### Workflow:
+1.  **Create Migration File:**
+    *   For *every* database change (new table, column modification, type change, etc.), create a new SQL file in the `sql/` directory.
+    *   Naming Convention: `XX_description.sql` (e.g., `06_discount_codes.sql`, `07_alter_user_table.sql`).
+    *   Content: Raw SQL commands (`CREATE`, `ALTER`, `DROP`, `INSERT`).
+
+2.  **Update Architecture Documentation:**
+    *   **Immediately** after defining the SQL change, you **MUST** update `DATABASE_ARCHITECTURE.md`.
+    *   Update the relevant Table section with new columns, types, defaults, or constraints.
+    *   If a new table is created, add a new section following the existing format (Table Name, Description, Field Table, RLS Policy).
+
+3.  **Verification:**
+    *   Run the SQL script against your local Development database.
+    *   Ensure no breaking changes occur for existing data unless accounted for.
+
+---
+
+## 2. API & Route Development
+
+**Rule:** The API contract must remain synced across code, documentation, and testing tools.
+
+### Workflow:
+1.  **Implement Route:**
+    *   Define the route in `src/routes/`.
+    *   Implement the controller logic in `src/controllers/`.
+    *   Ensure standardized error handling (use `res.status(code).json({ error: ... })`).
+
+2.  **Update Documentation:**
+    *   Open `API_DOCUMENTATION.md`.
+    *   Add or update the route entry under the appropriate section.
+    *   **Required details:** HTTP Method, URL, Purpose, Access Control (Role), Request Payload (JSON), Response Format, and Logic description.
+
+3.  **Update Postman Collection:**
+    *   Open `postman_collection.json`.
+    *   Add the new request to the corresponding folder.
+    *   **Critical:** Include a valid JSON body example in the request.
+    *   Ensure the request uses the correct Environment Variables (e.g., `{{base_url}}`, `{{token}}`).
+
+---
+
+## 3. Coding Guidelines & Standards
+
+**Rule:** Code quality is non-negotiable. We follow strict TypeScript standards and comprehensive testing.
+
+### General:
+*   **Language:** TypeScript.
+*   **Style:** Use `Start Case` for classes/components, `camelCase` for variables/functions.
+*   **Imports:** Use absolute or relative paths consistently.
+*   **Async/Await:** Prefer `async/await` over clear `.then()` chains.
+
+### Linting:
+*   **Check:** Run `npm run lint` frequently during development.
+*   **Fix:** Run `npm run lint:fix` to automatically resolve formatting and fixable issues.
+*   **Commit Rule:** Never commit code with active Linting errors.
+
+### Testing:
+*   We use a custom test suite runner located in `src/scripts/`.
+*   **Master Command:** `npm run test:all`
+    *   This command performs the full quality check:
+        1.  Clears the Text/Dev Database.
+        2.  Seeds initial Staff data.
+        3.  Runs General API Tests (`test-all-apis.ts`).
+        4.  Runs RBAC Security Tests (`test-rbac.ts`).
+        5.  Runs ElasticSearch Integration Tests (`test-elastic.ts`).
+        6.  Runs Linter.
+*   **Rule:** Before marking a task as "Done", `npm run test:all` MUST pass completely.
+
+---
+
+## 4. Role-Based Access Control (RBAC)
+
+**Rule:** Security is paramount. Do not expose administrative data to standard users.
+
+*   **Logic:** Always check `req.user.role` or `req.user.location_id` in controllers.
+*   **SuperAdmin:** Has global access. Can access ANY `location_id`.
+*   **Admin/Staff:** Restricted to their specific `location_id`.
+*   **User:** Restricted to their own `account_id` and `profile_id`.
+*   **Testing:** When adding a new protected route, add a test case in `src/scripts/test-rbac.ts` specifically trying to access it with unauthorized roles (to ensure it fails code 403).
+
+---
+
+## 5. ElasticSearch Integration
+
+**Rule:** Search indices must stay synchronized with the primary PostgreSQL database.
+
+*   If you modify `Leads`, `Accounts`, or `Profiles` tables:
+    1.  Update the interface/type definitions in TypeScript.
+    2.  Update the Index Mapping in `src/services/elasticService.ts`.
+    3.  Update the Re-indexing logic to include the new fields.
+    4.  Run `npm run test:elastic` to verify the search engine picks up the changes.

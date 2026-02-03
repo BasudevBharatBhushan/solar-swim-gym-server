@@ -257,8 +257,7 @@ Services bundled into a membership.
 | Field Name | Type | Description | Key / Constraint |
 | :--- | :--- | :--- | :--- |
 | `membership_service_id`| `UUID` | Unique ID. | **PK**, Default: `gen_random_uuid()` |
-| `membership_program_id`| `UUID` | Parent program. | **FK** -> `membership_program`, `NOT NULL` |
-| `category_id` | `UUID` | Specific category override. | **FK** -> `membership_program_category` |
+| `membership_program_id`| `UUID` | Parent program (NULL for Base Plan). | **FK** -> `membership_program` |
 | `service_id` | `UUID` | The included service. | **FK** -> `service`, `NOT NULL` |
 | `is_included` | `BOOLEAN` | Whether it is free/included. | Default: `TRUE` |
 | `usage_limit` | `TEXT` | Cap on usage (e.g., "10 visits"). | |
@@ -364,8 +363,8 @@ Global age classifications.
 | :--- | :--- | :--- | :--- |
 | `age_group_id` | `UUID` | Unique ID. | **PK**, Default: `gen_random_uuid()` |
 | `name` | `TEXT` | e.g., "Adult", "Child". | `NOT NULL` |
-| `min_age` | `INT` | Lower bound (inclusive). | `NOT NULL` |
-| `max_age` | `INT` | Upper bound (inclusive). | `NOT NULL` |
+| `min_age` | `DECIMAL` | Lower bound (inclusive). | `NOT NULL` |
+| `max_age` | `DECIMAL` | Upper bound (inclusive). | `NOT NULL` |
 
 ### **Table: `subscription_term`**
 Billing duration definitions.
@@ -376,7 +375,7 @@ Billing duration definitions.
 | `location_id` | `UUID` | Location scope. | **FK** -> `location`, `NOT NULL` |
 | `name` | `TEXT` | e.g., "Monthly". | `NOT NULL` |
 | `duration_months` | `INT` | Length in months. | Default: `1`, `NOT NULL` |
-| `payment_mode` | `ENUM` | `PIF`, `RECURRING` | Default: `RECURRING`, `NOT NULL` |
+| `payment_mode` | `ENUM` | `PAY_IN_FULL`, `RECURRING` | Default: `RECURRING`, `NOT NULL` |
 | `is_active` | `BOOLEAN` | Availability flag. | Default: `TRUE` |
 
 **RLS Policy**: Filter by `location_id`.

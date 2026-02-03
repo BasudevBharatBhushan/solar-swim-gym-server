@@ -168,6 +168,15 @@ async function runRbacTests() {
   // Test: Admin 1 accessing its own location
   await testApi('GET', `/leads?location_id=${locId1}`, null, "Admin 1 Accessing Location 1 Leads (Should pass)", a1Headers);
 
+  // 6. Test the new staff/all endpoint
+  console.log(`\n${colors.yellow}Step 4: Verifying the new staff/all endpoint...${colors.reset}`);
+  
+  // SuperAdmin should be able to fetch all staff
+  await testApi('GET', '/auth/staff/all', null, "SuperAdmin Fetching All Staff (Should pass)", saHeaders);
+  
+  // Admin 1 should be blocked from fetching all staff
+  await testApi('GET', '/auth/staff/all', null, "Admin 1 Fetching All Staff (Should be blocked)", a1Headers);
+
   // 6. Test User Scope
   console.log(`\n${colors.yellow}Step 4: Verifying User Scope...${colors.reset}`);
   
@@ -176,10 +185,12 @@ async function runRbacTests() {
   // or just register a new one
   const reg = await testApi('POST', '/auth/user/register', {
     location_id: locId1,
-    first_name: "Test",
-    last_name: "User",
-    email: userEmail,
-    date_of_birth: "1995-01-01"
+    primary_profile: {
+      first_name: "Test",
+      last_name: "User",
+      email: userEmail,
+      date_of_birth: "1995-01-01"
+    }
   }, "Register User");
 
   const actToken = reg.activation_token;
@@ -199,6 +210,9 @@ async function runRbacTests() {
   
   // User accessing its own Account data
   await testApi('GET', '/accounts', null, "User viewing Accounts (Should return its own via RLS)", uHeaders);
+
+  // User trying to fetch all staff
+  await testApi('GET', '/auth/staff/all', null, "User Fetching All Staff (Should be blocked)", uHeaders);
 
   console.log(`\n${colors.bright}${colors.green}═══════════════════════════════════════${colors.reset}`);
   console.log(`${colors.bright}${colors.green}    RBAC TESTING COMPLETE${colors.reset}`);

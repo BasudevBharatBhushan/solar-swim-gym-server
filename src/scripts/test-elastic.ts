@@ -85,12 +85,24 @@ async function setupTestData() {
   ];
 
   for (const acc of accounts) {
-    await crmService.upsertAccount(acc);
+    // Manually create account first since upsertAccount requires it
+    const { data: newAcc, error } = await supabase
+      .from('account')
+      .insert({ location_id: acc.location_id, status: 'ACTIVE' })
+      .select('account_id')
+      .single();
+    
+    if (error) throw new Error(error.message);
+    
+    await crmService.upsertAccount({ 
+      ...acc, 
+      account_id: newAcc.account_id 
+    });
   }
 
   // Wait a bit for ES to refresh (indexing is near real-time)
-  console.log('⏳ Waiting for indexing...');
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  console.log('⏳ Waiting 4s for indexing...');
+  await new Promise(resolve => setTimeout(resolve, 4000));
 
   // 5. Run Search Tests
   console.log('\n🔍 Running Search Tests...\n');

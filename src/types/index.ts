@@ -64,7 +64,7 @@ export interface SubscriptionTerm {
   location_id?: string;
   name: string;
   duration_months: number;
-  payment_mode?: 'SINGLE' | 'RECURRING';
+  payment_mode?: 'PAY_IN_FULL' | 'RECURRING';
   is_active?: boolean;
   created_at?: Date;
   updated_at?: Date;
@@ -222,15 +222,14 @@ export interface MembershipEligibilityRule {
     maxAdult?: number;
     minSenior?: number;
     maxSenior?: number;
-    [key: string]: any; // Allow extensibility
+    [key: string]: unknown; // Allow extensibility
   };
   message?: string;
 }
 
 export interface MembershipService {
   membership_service_id?: string;
-  membership_program_id: string;
-  category_id?: string | null;
+  membership_program_id?: string | null;
   service_id: string;
   is_included?: boolean;
   usage_limit?: string | null;

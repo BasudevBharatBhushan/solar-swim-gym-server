@@ -392,6 +392,22 @@ export const createStaff = async (staffData: {
   return staffWithoutPassword as Staff;
 };
 
+/**
+ * Get all staff members (SuperAdmin only)
+ */
+export const getAllStaff = async (): Promise<Staff[]> => {
+  const { data, error } = await supabase
+    .from('staff')
+    .select('staff_id, location_id, first_name, last_name, email, role, is_active, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error('Failed to fetch staff: ' + error.message);
+  }
+
+  return data as Staff[];
+};
+
 export default {
   staffLogin,
   accountLogin,
@@ -399,5 +415,6 @@ export default {
   activateAccount,
   validateActivationToken,
   getActivationToken,
-  createStaff
+  createStaff,
+  getAllStaff
 };

@@ -105,3 +105,4 @@ npm run test
 Detailed documentation is available in the following files:
 - [API Route Documentation](./API_DOCUMENTATION.md)
 - [Authentication & RLS Guide](./AUTHENTICATION_RLS_DOCUMENTATION.md)
+- [Development Rules & Guidelines](./DEVELOPMENT_RULES.md)

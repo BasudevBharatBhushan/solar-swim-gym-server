@@ -145,6 +145,9 @@ async function runTests() {
   
   const newLoc = await testApi('POST', '/locations', { name: 'New Test Location' }, 'SuperAdmin can create location', saHeaders, 'SUPERADMIN');
 
+  await testApi('GET', '/auth/staff/all', null, 'SuperAdmin can fetch all staff', saHeaders, 'SUPERADMIN');
+  await testApi('GET', '/auth/staff/all', null, 'Admin 1 cannot fetch all staff', a1Headers, 'ADMIN', false);
+
   // 3. ADMIN SCOPE & ISOLATION
   console.log(`\n${colors.bright}Phase 3: Admin Scope & Isolation${colors.reset}`);
   
@@ -166,12 +169,16 @@ async function runTests() {
 
   // 1. Config: Age Group (Global) & Term (Local)
   const ageGroup = await testApi('POST', '/config/age-groups', {
-    name: 'Adult Test', min_age: 18, max_age: 99
-  }, 'Admin 1 creates Age Group', saHeaders, 'SUPERADMIN'); 
+    name: 'Adult Test', min_age: 18.5, max_age: 99.5
+  }, 'Admin 1 creates Age Group (Decimal ages)', saHeaders, 'SUPERADMIN'); 
 
   const subTerm = await testApi('POST', '/config/subscription-terms', {
     location_id: locId1, name: 'Monthly Test', duration_months: 1, payment_mode: 'RECURRING'
   }, 'Admin 1 creates Subscription Term', a1Headers, 'ADMIN');
+
+  await testApi('POST', '/config/subscription-terms', {
+    location_id: locId1, name: 'Full Pay Test', duration_months: 12, payment_mode: 'PAY_IN_FULL'
+  }, 'Admin 1 creates Pay In Full Term', a1Headers, 'ADMIN');
 
   const ageGroupId = ageGroup?.age_group_id;
   const termId = subTerm?.subscription_term_id;
@@ -221,11 +228,11 @@ async function runTests() {
                     rules: [
                         { priority: 1, result: 'ALLOW', message: 'Adult Policy', condition_json: { minAdult: 1, maxAdult: 1 } },
                         { priority: 2, result: 'ALLOW', message: 'Child Policy', condition_json: { minChild: 0, maxChild: 2 } }
-                    ],
-                    services: [
-                        { service_id: serviceId, is_included: true }
                     ]
                 }
+            ],
+            services: [
+                { service_id: serviceId, is_included: true }
             ]
         }, 'Admin 1 creates Membership Program with split rules', a1Headers, 'ADMIN');
         

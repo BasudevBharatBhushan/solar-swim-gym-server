@@ -11,7 +11,6 @@ interface MembershipProgramFull extends MembershipProgram {
   categories: (MembershipProgramCategory & {
     fees: MembershipFee[];
     rules: MembershipEligibilityRule[];
-    services: MembershipService[];
   })[];
   services: MembershipService[]; // Program-level services
 }
@@ -67,14 +66,13 @@ export const getAllPrograms = async (locationId: string): Promise<MembershipProg
   // Assembly
   return programs.map(prog => {
     const progCats = categories?.filter(c => c.membership_program_id === prog.membership_program_id) || [];
-    const progServices = services?.filter(s => s.membership_program_id === prog.membership_program_id && !s.category_id) || [];
+    const progServices = services?.filter(s => s.membership_program_id === prog.membership_program_id) || [];
 
     const categoriesWithDetails = progCats.map(cat => {
       return {
         ...cat,
         fees: fees?.filter(f => f.category_id === cat.category_id) || [],
-        rules: rules?.filter(r => r.category_id === cat.category_id) || [],
-        services: services?.filter(s => s.category_id === cat.category_id) || []
+        rules: rules?.filter(r => r.category_id === cat.category_id) || []
       };
     });
 
@@ -143,11 +141,10 @@ export const getProgramById = async (programId: string): Promise<MembershipProgr
   const progCategories = categories?.map(cat => ({
       ...cat,
       fees: fees.filter(f => f.category_id === cat.category_id),
-      rules: rules.filter(r => r.category_id === cat.category_id),
-      services: services?.filter(s => s.category_id === cat.category_id) || []
+      rules: rules.filter(r => r.category_id === cat.category_id)
   })) || [];
 
-  const progServices = services?.filter(s => !s.category_id) || [];
+  const progServices = services || [];
 
   return {
       ...program,
@@ -160,7 +157,6 @@ interface UpsertProgramPayload extends MembershipProgram {
   categories?: (MembershipProgramCategory & {
     fees?: MembershipFee[];
     rules?: MembershipEligibilityRule[];
-    services?: MembershipService[];
   })[];
   services?: MembershipService[];
 }
@@ -183,7 +179,7 @@ export const upsertProgram = async (data: UpsertProgramPayload): Promise<Members
     // 2. Upsert Categories
     if (categories) {
       for (const cat of categories) {
-        const { fees, rules, services: catServices, ...catData } = cat;
+        const { fees, rules, services: _services, ...catData } = cat as any;
         
         const { data: catResult, error: catErr } = await supabase
           .from('membership_program_category')
@@ -207,17 +203,6 @@ export const upsertProgram = async (data: UpsertProgramPayload): Promise<Members
              await supabase.from('membership_eligibility_rule').upsert({ ...rule, category_id: categoryId });
           }
         }
-
-        // Category Services
-        if (catServices) {
-          for (const s of catServices) {
-            await supabase.from('membership_service').upsert({ 
-              ...s, 
-              membership_program_id: programId,
-              category_id: categoryId 
-            });
-          }
-        }
       }
     }
 
@@ -226,8 +211,7 @@ export const upsertProgram = async (data: UpsertProgramPayload): Promise<Members
       for (const s of services) {
         await supabase.from('membership_service').upsert({
            ...s,
-           membership_program_id: programId,
-           category_id: null
+           membership_program_id: programId
         });
       }
     }

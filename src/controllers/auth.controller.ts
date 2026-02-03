@@ -166,6 +166,19 @@ export const createStaff = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+/**
+ * Get all staff (SuperAdmin only)
+ */
+export const getAllStaff = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await authService.getAllStaff();
+    res.json(result);
+  } catch (err: unknown) {
+    console.error('Error in getAllStaff:', err);
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
 export default {
   staffLogin,
   registerUser,
@@ -173,7 +186,8 @@ export default {
   validateToken,
   accountLogin,
   getActivationToken,
-  createStaff
+  createStaff,
+  getAllStaff
 };
 
 

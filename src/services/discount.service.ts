@@ -29,7 +29,7 @@ export const upsertDiscountCode = async (data: Partial<DiscountCode>): Promise<D
     is_active 
   } = data;
 
-  const payload: any = {
+  const payload: Partial<DiscountCode> = {
     location_id,
     staff_id,
     discount_code,
