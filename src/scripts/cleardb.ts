@@ -15,16 +15,18 @@ async function clearDatabase() {
     'membership_program',
     'service_price',
     'base_price',
+    'email_smtp_config',
+    'discount_codes',
     'service',
     'leads',
     'account_activation_tokens',
     'profile',
     'account',
-    'staff',
+    // 'staff',
     'waiver_program',
     'subscription_term',
     'age_group',
-    'location'
+    // 'location'
   ];
 
   for (const table of tables) {
@@ -40,6 +42,8 @@ async function clearDatabase() {
       'membership_program': 'membership_program_id',
       'service_price': 'service_price_id',
       'base_price': 'base_price_id',
+      'email_smtp_config': 'config_id',
+      'discount_codes': 'discount_id',
       'service': 'service_id',
       'leads': 'lead_id',
       'account_activation_tokens': 'token_id',

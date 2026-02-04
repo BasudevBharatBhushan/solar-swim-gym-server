@@ -35,6 +35,12 @@ CREATE POLICY "Users can delete email config for their location" ON public.email
     FOR DELETE
     USING (location_id = (current_setting('app.current_location_id'::text, true))::uuid);
 
+-- Add Public Access policy to match existing project pattern for JS client compatibility
+CREATE POLICY "Public Access Email Config" ON public.email_smtp_config
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
 -- Create Policy for Service Role (if needed for background jobs or superadmins bypassing RLS via service key)
 -- Usually service role bypasses RLS, but explicit policies for superadmin users might be needed if they masquerade.
 -- Assuming standard setup where superadmins might need access to all.
