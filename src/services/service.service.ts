@@ -82,11 +82,12 @@ interface UpsertServiceData {
   name: string;
   description?: string;
   is_addon_only?: boolean;
+  is_active?: boolean;
   pricing_structure?: PricingGroup[];
 }
 
 export const upsertService = async (data: UpsertServiceData): Promise<ServiceWithPricing | undefined> => {
-    const { service_id, location_id, name, description, is_addon_only, pricing_structure } = data;
+    const { service_id, location_id, name, description, is_addon_only, is_active, pricing_structure } = data;
     
     if (!location_id) throw new Error('Location ID is required');
 
@@ -94,7 +95,9 @@ export const upsertService = async (data: UpsertServiceData): Promise<ServiceWit
 
     // 1. Service Update/Create
     const servicePayload: Partial<Service> = { 
-       location_id, name, description, is_addon_only: is_addon_only || false 
+       location_id, name, description, 
+       is_addon_only: is_addon_only || false,
+       is_active: is_active !== undefined ? is_active : true
     };
     
     if (service_id) {

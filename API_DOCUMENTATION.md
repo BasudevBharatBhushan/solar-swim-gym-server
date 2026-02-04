@@ -179,7 +179,7 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
 
 ### 4.2 Base Pricing & Bundles
 **GET** `/base-prices`
-- **Purpose**: Fetch base plan pricing and global bundled services.
+- **Purpose**: Fetch base plan pricing and global membership services.
 - **Response**:
   ```json
   {
@@ -192,12 +192,52 @@ This document defines the backend API contracts, logic, and pseudo-code implemen
         "term_name": "Monthly"
       }
     ],
-    "bundled_services": [
-       { "service_id": "...", "is_included": true, "usage_limit": "Unlimited" }
+    "membership_services": [
+       { "membership_service_id": "...", "service_id": "...", "is_included": true, "usage_limit": "Unlimited" }
     ]
   }
   ```
-- **Note**: `bundled_services` here are those available to all Base Plan members (where `membership_program_id` is NULL).
+- **Note**: `membership_services` here are those belonging to the Base Plan (where `membership_program_id` is NULL and `is_part_of_base_plan` is TRUE).
+
+**POST** `/base-prices`
+- **Purpose**: Add or update base plan prices and membership services.
+- **Payload**:
+  ```json
+  {
+    "location_id": "uuid",
+    "prices": [
+      {
+        "base_price_id": "optional-uuid",
+        "name": "...",
+        "role": "PRIMARY",
+        "age_group_id": "...",
+        "subscription_term_id": "...",
+        "price": 29.99
+      }
+    ],
+    "membership_services": [
+      {
+        "membership_service_id": "optional-uuid",
+        "service_id": "...",
+        "is_included": true,
+        "usage_limit": "5 visits",
+        "discount": "10%"
+      }
+    ]
+  }
+  ```
+- **Logic**: Batch upserts prices and membership services. Automatically sets `membership_program_id` to NULL and `is_part_of_base_plan` to TRUE for the services.
+
+### 4.3 Membership Services (Dedicated Routes)
+**GET** `/membership-services/base-plan`
+- **Purpose**: Fetch membership services specifically for the base plan (where `membership_program_id` is NULL).
+- **Query Params**: `location_id` (optional if in context)
+- **Response**: List of `membership_service` objects with `service_name`.
+
+**POST** `/membership-services/upsert`
+- **Purpose**: Upsert any membership service mapping (base plan or program-linked).
+- **Payload**: Single object or Array of `membership_service` objects.
+- **Note**: If `membership_service_id` is missing, the backend will attempt to match existing records by `service_id` and `membership_program_id` to perform an update instead of a duplicate insert.
 
 ## 5. Membership Engine
 

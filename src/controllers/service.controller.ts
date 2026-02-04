@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import serviceService from '../services/service.service';
+import fs from 'fs';
+import path from 'path';
 
 export const getAllServices = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -18,7 +20,11 @@ export const getAllServices = async (req: Request, res: Response): Promise<void>
 };
 
 export const upsertService = async (req: Request, res: Response): Promise<void> => {
-  try {
+    console.log("upsertService",req.body);
+    try {
+        const logPath = path.join(process.cwd(), 'debug_log.txt');
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] HIT upsertService with body: ${JSON.stringify(req.body)}\n`);
+    console.log("upsertService",req.body);
     const result = await serviceService.upsertService(req.body);
     res.json(result);
   } catch (err: unknown) {

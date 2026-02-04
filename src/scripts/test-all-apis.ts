@@ -184,17 +184,25 @@ async function runTests() {
   const termId = subTerm?.subscription_term_id;
 
   if (ageGroupId && termId) {
-      // 2. Base Price
-      const basePrice = await testApi('POST', '/base-prices', {
+      // 2. Base Plan
+      const basePlan = await testApi('POST', '/base-prices', {
           location_id: locId1,
-          name: 'Standard Base Fee',
-          role: 'PRIMARY',
-          age_group_id: ageGroupId,
-          subscription_term_id: termId,
-          price: 29.99
-      }, 'Admin 1 creates Base Price', a1Headers, 'ADMIN');
+          prices: [{
+              name: 'Standard Base Fee',
+              role: 'PRIMARY',
+              age_group_id: ageGroupId,
+              subscription_term_id: termId,
+              price: 29.99
+          }],
+          membership_services: []
+      }, 'Admin 1 upserts Base Plan', a1Headers, 'ADMIN');
 
-      await testApi('GET', `/base-prices?location_id=${locId1}`, null, 'Admin 1 gets Base Prices', a1Headers, 'ADMIN');
+      const fetchedPlan = await testApi('GET', `/base-prices?location_id=${locId1}`, null, 'Admin 1 gets Base Plan', a1Headers, 'ADMIN');
+      
+      // Verification
+      if (fetchedPlan && (!fetchedPlan.prices || !fetchedPlan.membership_services)) {
+          console.error('Base Plan response missing expected root keys!');
+      }
 
       // 3. Service with Pricing
       const service = await testApi('POST', '/services', {

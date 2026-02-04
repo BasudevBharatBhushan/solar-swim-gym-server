@@ -8,16 +8,20 @@ import basePriceRoutes from './base-price.routes';
 import membershipRoutes from './membership.routes';
 import billingRoutes from './billing.routes';
 import discountRoutes from './discount.routes';
+import membershipServiceRoutes from './membership-service.routes';
+import emailConfigRoutes from './emailConfig.routes';
 
 
 const router = Router();
 
 router.use('/locations', locationRoutes);
+router.use('/email-config', emailConfigRoutes);
 router.use('/auth', authRoutes);
 router.use('/config', configRoutes);
 router.use('/services', serviceRoutes);
 router.use('/base-prices', basePriceRoutes);
 router.use('/memberships', membershipRoutes);
+router.use('/membership-services', membershipServiceRoutes);
 router.use('/billing', billingRoutes);
 router.use('/discounts', discountRoutes);
 

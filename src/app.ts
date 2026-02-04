@@ -11,7 +11,7 @@ app.use(express.json());
 
 // Request logger
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`[VERIFY-LOG-123] [${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
@@ -20,7 +20,8 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    server_version: "v2-debug-123"
   });
 });
 

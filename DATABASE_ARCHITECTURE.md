@@ -143,6 +143,26 @@ The catalog of available offerings.
 
 **RLS Policy**: Filter by `location_id`.
 
+### **Table: `email_smtp_config`**
+Configuration for sending emails via SMTP per location.
+
+| Field Name | Type | Description | Key / Constraint |
+| :--- | :--- | :--- | :--- |
+| `config_id` | `UUID` | Unique configuration ID. | **PK**, Default: `gen_random_uuid()` |
+| `location_id` | `UUID` | Location scope. | **FK** -> `location`, `UNIQUE`, `NOT NULL` |
+| `smtp_host` | `TEXT` | SMTP Server Host (e.g., smtp.gmail.com). | |
+| `smtp_port` | `INTEGER` | SMTP Port (e.g., 587). | |
+| `sender_email` | `TEXT` | From email address. | |
+| `sender_name` | `TEXT` | From name. | |
+| `smtp_username` | `TEXT` | Username for authentication. | |
+| `smtp_password` | `TEXT` | Password for authentication. | |
+| `is_secure` | `BOOLEAN` | Use TLS/SSL. | Default: `TRUE` |
+| `is_active` | `BOOLEAN` | Availability flag. | Default: `TRUE` |
+| `created_at` | `TIMESTAMP` | Record creation timestamp. | Default: `NOW()` |
+| `updated_at` | `TIMESTAMP` | Record update timestamp. | Default: `NOW()` |
+
+**RLS Policy**: Filter by `location_id`. Only accessible by authorized staff.
+
 ### **Table: `base_price`**
 Standard pricing for core services.
 

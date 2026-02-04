@@ -249,3 +249,18 @@ export interface DiscountCode {
   created_at?: Date;
   updated_at?: Date;
 }
+// Config Types
+export interface EmailConfig {
+  config_id?: string;
+  location_id: string;
+  smtp_host?: string;
+  smtp_port?: number;
+  sender_email?: string;
+  sender_name?: string;
+  smtp_username?: string;
+  smtp_password?: string;
+  is_secure?: boolean;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
