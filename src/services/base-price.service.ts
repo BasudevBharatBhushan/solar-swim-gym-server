@@ -68,16 +68,23 @@ export const upsertBasePrice = async (data: any): Promise<BasePlanResponse> => {
 
   // 1. Upsert Prices (with duplication prevention)
   if (prices && prices.length > 0) {
-    // Fetch current prices to match by age_group and term if ID is missing
+    // Fetch current prices to match by age_group, term, name, and role if ID is missing
     const { data: existingPrices } = await supabase
       .from('base_price')
-      .select('base_price_id, age_group_id, subscription_term_id')
+      .select('base_price_id, age_group_id, subscription_term_id, name, role')
       .eq('location_id', location_id);
 
-    const priceMap = new Map((existingPrices || []).map((p: any) => [`${p.age_group_id}_${p.subscription_term_id}`, p.base_price_id]));
+    const priceMap = new Map((existingPrices || []).map((p: any) => [
+      `${p.age_group_id}_${p.subscription_term_id}_${p.name}_${p.role}`, 
+      p.base_price_id
+    ]));
 
     const pricesToUpsert = (prices as any[]).map((p: any) => {
-      const key = `${p.age_group_id}_${p.subscription_term_id}`;
+      // Ensure we have a valid key for lookup even if defaults are involved (default role is PRIMARY)
+      const role = p.role || 'PRIMARY'; 
+      const name = p.name; 
+      
+      const key = `${p.age_group_id}_${p.subscription_term_id}_${name}_${role}`;
       const id = p.base_price_id || priceMap.get(key);
       const { base_price_id: _oldId, ...rest } = p;
       return { 
@@ -89,8 +96,17 @@ export const upsertBasePrice = async (data: any): Promise<BasePlanResponse> => {
 
     console.log('Prices to upsert:', pricesToUpsert);
 
-    const { error } = await supabase.from('base_price').upsert(pricesToUpsert);
-    if (error) throw new Error(`Price error: ${error.message}`);
+    const priceUpdates = pricesToUpsert.filter(p => !!p.base_price_id);
+    const priceInserts = pricesToUpsert.filter(p => !p.base_price_id);
+
+    if (priceUpdates.length > 0) {
+      const { error } = await supabase.from('base_price').upsert(priceUpdates);
+      if (error) throw new Error(`Price update error: ${error.message}`);
+    }
+    if (priceInserts.length > 0) {
+      const { error } = await supabase.from('base_price').insert(priceInserts);
+      if (error) throw new Error(`Price insert error: ${error.message}`);
+    }
   }
 
   // 2. Upsert Membership Services (with duplication prevention)
@@ -116,8 +132,17 @@ export const upsertBasePrice = async (data: any): Promise<BasePlanResponse> => {
       };
     });
 
-    const { error } = await supabase.from('membership_service').upsert(servicesToUpsert);
-    if (error) throw new Error(`Membership Service error: ${error.message}`);
+    const msUpdates = servicesToUpsert.filter(s => !!s.membership_service_id);
+    const msInserts = servicesToUpsert.filter(s => !s.membership_service_id);
+
+    if (msUpdates.length > 0) {
+      const { error } = await supabase.from('membership_service').upsert(msUpdates);
+      if (error) throw new Error(`Membership Service update error: ${error.message}`);
+    }
+    if (msInserts.length > 0) {
+      const { error } = await supabase.from('membership_service').insert(msInserts);
+      if (error) throw new Error(`Membership Service insert error: ${error.message}`);
+    }
   }
 
   return getAllBasePrices(location_id);

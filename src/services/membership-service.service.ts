@@ -209,12 +209,31 @@ export const upsertMembershipService = async (data: Partial<MembershipService> |
     servicesToUpsert.push(entry);
   }
   
-  const { data: result, error } = await supabase
-    .from('membership_service')
-    .upsert(servicesToUpsert)
-    .select();
+  // To prevent "null value in column membership_service_id violates not-null constraint" during batch operations,
+  // we split the batch into updates (with ID) and inserts (without ID).
+  // Supabase/PostgREST can send NULL for missing keys in a mixed batch.
+  const updates = servicesToUpsert.filter(s => !!s.membership_service_id);
+  const inserts = servicesToUpsert.filter(s => !s.membership_service_id);
 
-  if (error) throw new Error(error.message);
+  let result: MembershipService[] = [];
+
+  if (updates.length > 0) {
+    const { data, error } = await supabase
+      .from('membership_service')
+      .upsert(updates)
+      .select();
+    if (error) throw new Error(error.message);
+    if (data) result = [...result, ...data];
+  }
+
+  if (inserts.length > 0) {
+    const { data, error } = await supabase
+      .from('membership_service')
+      .insert(inserts)
+      .select();
+    if (error) throw new Error(error.message);
+    if (data) result = [...result, ...data];
+  }
 
   return result as MembershipService[];
 };
