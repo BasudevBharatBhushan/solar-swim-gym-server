@@ -55,18 +55,12 @@ export const getAllPrograms = async (locationId: string): Promise<MembershipProg
   
   if (ruleErr) throw new Error(ruleErr.message);
 
-  // 5. Fetch Services (Can be linked to Program or Category)
-  const { data: services, error: svcErr } = await supabase
-    .from('membership_service')
-    .select('*')
-    .in('membership_program_id', programIds);
-
-  if (svcErr) throw new Error(svcErr.message);
+  // 5. Fetch Services - REMOVED
 
   // Assembly
   return programs.map(prog => {
     const progCats = categories?.filter(c => c.membership_program_id === prog.membership_program_id) || [];
-    const progServices = services?.filter(s => s.membership_program_id === prog.membership_program_id) || [];
+    const progServices: MembershipService[] = []; // services?.filter(s => s.membership_program_id === prog.membership_program_id) || [];
 
     const categoriesWithDetails = progCats.map(cat => {
       return {
@@ -129,13 +123,7 @@ export const getProgramById = async (programId: string): Promise<MembershipProgr
       rules = data || [];
   }
 
-  // 5. Fetch Services
-  const { data: services, error: svcErr } = await supabase
-    .from('membership_service')
-    .select('*')
-    .eq('membership_program_id', programId);
-
-  if (svcErr) throw new Error(svcErr.message);
+  // 5. Fetch Services - REMOVED
 
   // Assembly
   const progCategories = categories?.map(cat => ({
@@ -144,7 +132,7 @@ export const getProgramById = async (programId: string): Promise<MembershipProgr
       rules: rules.filter(r => r.category_id === cat.category_id)
   })) || [];
 
-  const progServices = services || [];
+  const progServices: MembershipService[] = []; // services || [];
 
   return {
       ...program,
@@ -206,15 +194,7 @@ export const upsertProgram = async (data: UpsertProgramPayload): Promise<Members
       }
     }
 
-    // 3. Upsert Program Level Services
-    if (services) {
-      for (const s of services) {
-        await supabase.from('membership_service').upsert({
-           ...s,
-           membership_program_id: programId
-        });
-      }
-    }
+    // 3. Upsert Program Level Services - REMOVED
 
     // Return the specific program using our new getter
     return getProgramById(programId);

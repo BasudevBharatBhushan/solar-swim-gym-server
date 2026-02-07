@@ -23,17 +23,9 @@ export const getAllBasePrices = async (locationId: string): Promise<BasePlanResp
 
   if (priceErr) throw new Error(priceErr.message);
 
-  // 2. Fetch Membership Services (Base Plan)
-  // Those where membership_program_id is null and is_part_of_base_plan is true
-  const { data: membershipServices, error: svcErr } = await supabase
-    .from('membership_service')
-    .select('*, service:service_id!inner(location_id)')
-    .is('membership_program_id', null)
-    .eq('is_part_of_base_plan', true)
-    .eq('service.location_id', locationId);
-
-  if (svcErr) throw new Error(svcErr.message);
-
+  // 2. Fetch Membership Services (Base Plan) - REMOVED
+  // Membership services are now managed separately via membership-service API
+  
   // 3. Enrich Prices with Names
   let enrichedPrices: BasePriceWithDetails[] = [];
   
@@ -51,17 +43,9 @@ export const getAllBasePrices = async (locationId: string): Promise<BasePlanResp
     }));
   }
 
-  // Cast bundledServices to MembershipService[] to remove joined table data from type if needed
-  // Note: Supabase returns the join data structure, but we can just treat it as MembershipService if we ignore the extra field?
-  // Or map it to clean it up.
-  const cleanMembershipServices: MembershipService[] = membershipServices?.map((s: any) => {
-    const { service, ...rest } = s; 
-    return rest as MembershipService;
-  }) || [];
-
   return {
     prices: enrichedPrices,
-    membership_services: cleanMembershipServices
+    membership_services: [] // Return empty array for backward compatibility if needed, or update type
   };
 };
 

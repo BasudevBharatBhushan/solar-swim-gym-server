@@ -6,10 +6,10 @@ import { requireAdmin, validateLocationAccess } from '../middlewares/authorize';
 const router = Router();
 
 /**
- * @route GET /api/membership-services/base-plan
- * @desc Fetch membership services for the base plan (membership_program_id is null)
+ * @route GET /api/membership-services/:ownerId
+ * @desc Fetch membership services for a specific owner (Base Plan or Category)
  */
-router.get('/base-plan', authenticateToken, membershipServiceController.getBasePlanServices);
+router.get('/:ownerId', authenticateToken, membershipServiceController.getServicesByOwner);
 
 /**
  * @route POST /api/membership-services/upsert

@@ -86,11 +86,14 @@ export const searchLeads = async (
     });
   }
 
+  const sortableTextFields = ['first_name', 'last_name', 'email', 'mobile'];
+  const actualSortField = sortableTextFields.includes(sortField) ? `${sortField}.keyword` : sortField;
+
   const result = await client.search({
     index: 'leads',
     from,
     size,
-    sort: [{ [sortField]: { order: sortOrder } }],
+    sort: [{ [actualSortField]: { order: sortOrder } }],
     query: {
       bool: {
         must

@@ -55,6 +55,7 @@ export interface AgeGroup {
   name: string;
   min_age: number;
   max_age: number;
+  accept_guardian_information?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -90,8 +91,30 @@ export interface Service {
   service_type?: string;
   is_addon_only?: boolean;
   is_active?: boolean;
+  image_url?: string;
   created_at?: Date;
   updated_at?: Date;
+}
+
+export interface ServicePack {
+  service_pack_id?: string;
+  service_id: string;
+  name: string;
+  description?: string;
+  classes?: number;
+  duration_days?: number;
+  duration_months?: number;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface Session {
+    session_id?: string;
+    name: string;
+    start_date: Date | string;
+    expiry_date: Date | string;
+    created_at?: Date;
+    updated_at?: Date;
 }
 
 // CRM Types
@@ -169,10 +192,11 @@ export interface BasePrice {
 
 export interface ServicePrice {
   service_price_id?: string;
-  service_id: string;
+  service_pack_id: string;
+  service_id?: string; // Kept for legacy compatibility if needed, but logic moves to service_pack_id
   location_id?: string;
   age_group_id: string;
-  subscription_term_id: string;
+  subscription_term_id?: string; // Now nullable
   price: number;
   is_active?: boolean;
   created_at?: Date;
@@ -236,6 +260,9 @@ export interface MembershipService {
   is_part_of_base_plan?: boolean;
   is_active?: boolean;
   discount?: string | null;
+  location_id?: string | null;
+  baseprice_role?: string | null;
+  baseprice_age_group_id?: string | null;
 }
 
 export interface DiscountCode {

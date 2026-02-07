@@ -1,79 +1,25 @@
 import supabase from '../config/db';
 import { Service } from '../types';
+import { PostgrestError } from '@supabase/supabase-js';
 
-interface PricingTerm {
-  subscription_term_id: string;
-  term_name: string;
-  price: number;
-  price_id?: string;
+// Define a minimal interface for the file to avoid direct dependency on Multer types in service signature if possible,
+// but for now strict typing is good.
+interface UploadedFile {
+    buffer: Buffer;
+    mimetype: string;
+    originalname: string;
 }
 
-interface PricingGroup {
-  age_group_id: string;
-  age_group_name: string;
-  terms: PricingTerm[];
-}
-
-interface ServiceWithPricing extends Service {
-  pricing_structure: PricingGroup[];
-}
-
-export const getAllServices = async (locationId: string): Promise<ServiceWithPricing[]> => {
+export const getAllServices = async (locationId: string): Promise<Service[]> => {
   if (!locationId) throw new Error('Location ID required');
 
-  // Fetch all related data
   const { data: services, error: svcError } = await supabase
     .from('service')
     .select('*')
     .eq('location_id', locationId);
 
   if (svcError) throw new Error(svcError.message);
-  if (!services || services.length === 0) return [];
-
-  const serviceIds = services.map(s => s.service_id);
-  
-  const { data: prices, error: priceError } = await supabase
-    .from('service_price')
-    .select('*')
-    .in('service_id', serviceIds);
-    
-  if (priceError) throw new Error(priceError.message);
-
-  const { data: ageGroups } = await supabase.from('age_group').select('*');
-  const { data: terms } = await supabase.from('subscription_term').select('*');
-
-  // Helper maps
-  const ageGroupMap = new Map(ageGroups?.map(ag => [ag.age_group_id, ag.name]));
-  const termMap = new Map(terms?.map(t => [t.subscription_term_id, t.name]));
-
-  const result: ServiceWithPricing[] = [];
-  
-  for (const svc of services) {
-    const svcPrices = prices?.filter(p => p.service_id === svc.service_id) || [];
-    
-    const grouped: Record<string, PricingGroup> = {};
-    for (const p of svcPrices) {
-      if (!grouped[p.age_group_id]) {
-        grouped[p.age_group_id] = {
-          age_group_id: p.age_group_id,
-          age_group_name: ageGroupMap.get(p.age_group_id) || 'Unknown',
-          terms: []
-        };
-      }
-      grouped[p.age_group_id].terms.push({
-        subscription_term_id: p.subscription_term_id,
-        term_name: termMap.get(p.subscription_term_id) || 'Unknown',
-        price: p.price,
-        price_id: p.service_price_id
-      });
-    }
-    
-    result.push({
-      ...svc,
-      pricing_structure: Object.values(grouped)
-    });
-  }
-  return result;
+  return services || [];
 };
 
 interface UpsertServiceData {
@@ -83,22 +29,23 @@ interface UpsertServiceData {
   description?: string;
   is_addon_only?: boolean;
   is_active?: boolean;
-  pricing_structure?: PricingGroup[];
+  image_url?: string;
 }
 
-export const upsertService = async (data: UpsertServiceData): Promise<ServiceWithPricing | undefined> => {
-    const { service_id, location_id, name, description, is_addon_only, is_active, pricing_structure } = data;
+export const upsertService = async (data: UpsertServiceData): Promise<Service | undefined> => {
+    const { service_id, location_id, name, description, is_addon_only, is_active, image_url } = data;
     
     if (!location_id) throw new Error('Location ID is required');
 
-    let finalServiceId = service_id;
-
-    // 1. Service Update/Create
     const servicePayload: Partial<Service> = { 
        location_id, name, description, 
        is_addon_only: is_addon_only || false,
        is_active: is_active !== undefined ? is_active : true
     };
+
+    if (image_url) {
+        servicePayload.image_url = image_url;
+    }
     
     if (service_id) {
        servicePayload.service_id = service_id;
@@ -107,43 +54,14 @@ export const upsertService = async (data: UpsertServiceData): Promise<ServiceWit
     const { data: svcResult, error: svcError } = await supabase
       .from('service')
       .upsert(servicePayload, { onConflict: 'service_id' })
-      .select('service_id')
+      .select('*')
       .single();
       
     if (svcError) throw new Error(svcError.message);
-    finalServiceId = svcResult.service_id;
-
-    // 2. Pricing Structure
-    if (pricing_structure && Array.isArray(pricing_structure)) {
-      for (const group of pricing_structure) {
-        for (const term of group.terms) {
-          const { subscription_term_id, price, price_id } = term;
-          
-          if (price_id) {
-            await supabase
-              .from('service_price')
-              .update({ price, updated_at: new Date() })
-              .eq('service_price_id', price_id);
-          } else {
-            await supabase
-              .from('service_price')
-              .insert({
-                service_id: finalServiceId,
-                location_id,
-                age_group_id: group.age_group_id,
-                subscription_term_id,
-                price
-              });
-          }
-        }
-      }
-    }
-
-    const allServices = await getAllServices(location_id);
-    return allServices.find(s => s.service_id === finalServiceId);
+    return svcResult;
 };
 
-export const getServiceById = async (serviceId: string): Promise<ServiceWithPricing | null> => {
+export const getServiceById = async (serviceId: string): Promise<Service | null> => {
    if (!serviceId) throw new Error('Service ID required');
 
    const { data: service, error: svcError } = await supabase
@@ -153,46 +71,52 @@ export const getServiceById = async (serviceId: string): Promise<ServiceWithPric
     .single();
 
    if (svcError) throw new Error(svcError.message);
-   if (!service) return null;
+   return service;
+};
 
-   const { data: prices, error: priceError } = await supabase
-    .from('service_price')
-    .select('*')
-    .eq('service_id', serviceId);
-    
-   if (priceError) throw new Error(priceError.message);
+export const updateServiceImage = async (serviceId: string, file: UploadedFile): Promise<string> => {
+    // 1. Verify service exists
+    const service = await getServiceById(serviceId);
+    if (!service) throw new Error('Service not found');
 
-   const { data: ageGroups } = await supabase.from('age_group').select('*');
-   const { data: terms } = await supabase.from('subscription_term').select('*');
+    // 2. Upload to Supabase Storage
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `services/${serviceId}.${fileExt}`;
 
-   const ageGroupMap = new Map(ageGroups?.map(ag => [ag.age_group_id, ag.name]));
-   const termMap = new Map(terms?.map(t => [t.subscription_term_id, t.name]));
+    const { error: uploadError } = await supabase.storage
+        .from('service-images')
+        .upload(fileName, file.buffer, {
+            contentType: file.mimetype,
+            upsert: true
+        });
 
-   const grouped: Record<string, PricingGroup> = {};
-   for (const p of prices || []) {
-      if (!grouped[p.age_group_id]) {
-        grouped[p.age_group_id] = {
-          age_group_id: p.age_group_id,
-          age_group_name: ageGroupMap.get(p.age_group_id) || 'Unknown',
-          terms: []
-        };
-      }
-      grouped[p.age_group_id].terms.push({
-        subscription_term_id: p.subscription_term_id,
-        term_name: termMap.get(p.subscription_term_id) || 'Unknown',
-        price: p.price,
-        price_id: p.service_price_id
-      });
-   }
-    
-   return {
-      ...service,
-      pricing_structure: Object.values(grouped)
-   };
+    if (uploadError) {
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+    }
+
+    // 3. Get Public URL
+    const { data: publicUrlData } = supabase.storage
+        .from('service-images')
+        .getPublicUrl(fileName);
+
+    const publicUrl = publicUrlData.publicUrl;
+
+    // 4. Update Service Record
+    const { error: updateError } = await supabase
+        .from('service')
+        .update({ image_url: publicUrl })
+        .eq('service_id', serviceId);
+
+    if (updateError) {
+        throw new Error(`Database update failed: ${updateError.message}`);
+    }
+
+    return publicUrl;
 };
 
 export default {
   getAllServices,
   upsertService,
-  getServiceById
+  getServiceById,
+  updateServiceImage
 };
