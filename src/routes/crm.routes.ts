@@ -17,6 +17,9 @@ router.post('/leads/reindex', authenticateToken, requireAdmin, validateLocationA
 router.get('/accounts', authenticateToken, validateLocationAccess, crmController.getAccounts);
 router.get('/accounts/search', authenticateToken, validateLocationAccess, crmController.searchAccounts);
 router.post('/accounts/upsert', authenticateToken, validateLocationAccess, crmController.upsertAccount);
+router.post('/accounts/reindex', authenticateToken, requireAdmin, validateLocationAccess, crmController.reindexAccounts);
+router.get('/accounts/:accountId', authenticateToken, validateLocationAccess, crmController.getAccountById);
+router.get('/profiles/:profileId', authenticateToken, validateLocationAccess, crmController.getProfile);
 
 // Global Reindex (Admin/Cron)
 router.post('/cron/reindex-all', authenticateToken, requireAdmin, validateLocationAccess, crmController.reindexAll);

@@ -1033,6 +1033,38 @@
                     "response": []
                 },
                 {
+                    "name": "Upsert Lead",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "x-location-id",
+                                "value": "{{lastLocationId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Smith\",\n    \"email\": \"jane.smith@example.com\",\n    \"phone\": \"555-0100\",\n    \"message\": \"Interested in swimming lessons\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/leads",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "leads"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
                     "name": "Reindex Leads",
                     "request": {
                         "method": "POST",
@@ -1051,6 +1083,29 @@
                             "path": [
                                 "leads",
                                 "reindex"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Accounts",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-location-id",
+                                "value": "{{lastLocationId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/accounts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "accounts"
                             ]
                         }
                     },
@@ -1132,6 +1187,78 @@
                             "path": [
                                 "accounts",
                                 "upsert"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Account by ID (With Profiles)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-location-id",
+                                "value": "{{lastLocationId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/accounts/{{lastAccountId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "accounts",
+                                "{{lastAccountId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Profile by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "x-location-id",
+                                "value": "{{lastLocationId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/profiles/{{lastProfileId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "profiles",
+                                "{{lastProfileId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reindex Accounts",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "x-location-id",
+                                "value": "{{lastLocationId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/accounts/reindex",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "accounts",
+                                "reindex"
                             ]
                         }
                     },

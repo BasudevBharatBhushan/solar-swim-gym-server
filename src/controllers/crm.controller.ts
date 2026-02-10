@@ -101,6 +101,17 @@ export const upsertAccount = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+export const reindexAccounts = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const locationId = req.locationId;
+        await crmService.reindexAccounts(locationId as string);
+        res.json({ message: 'Accounts reindexing started' });
+    } catch (err: unknown) {
+        console.error('Error in reindexAccounts:', err);
+        res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    }
+};
+
 export const reindexAll = async (req: Request, res: Response): Promise<void> => {
     try {
         const locationId = req.locationId;
@@ -113,13 +124,65 @@ export const reindexAll = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const locationId = req.locationId;
+        const { profileId } = req.params;
+
+        // If locationId not set (should be by middleware), handle it
+        if (!locationId) {
+             res.status(400).json({ error: 'Location context missing' });
+             return;
+        }
+
+        const profile = await crmService.getProfile(locationId, profileId as string);
+        
+        if (!profile) {
+            res.status(404).json({ error: 'Profile not found' });
+            return;
+        }
+
+        res.json(profile);
+    } catch (err: unknown) {
+        console.error('Error in getProfile:', err);
+        res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    }
+};
+
+export const getAccountById = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const locationId = req.locationId;
+        const { accountId } = req.params;
+
+        if (!locationId) {
+             res.status(400).json({ error: 'Location context missing' });
+             return;
+        }
+
+        const account = await crmService.getAccountById(locationId, accountId as string);
+        
+        if (!account) {
+            res.status(404).json({ error: 'Account not found' });
+            return;
+        }
+
+        res.json(account);
+    } catch (err: unknown) {
+        console.error('Error in getAccountById:', err);
+        res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    }
+};
+
 export default {
   getLeads,
   searchLeads,
   upsertLead,
   reindexLeads,
   getAccounts,
+  getProfile,
+  getAccountById,
   searchAccounts,
   upsertAccount,
+  reindexAccounts,
   reindexAll
 };

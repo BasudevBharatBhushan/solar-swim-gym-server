@@ -88,12 +88,14 @@ export const getWaivers = async (locationId?: string): Promise<WaiverProgram[]> 
 };
 
 export const upsertWaiver = async (data: WaiverProgram): Promise<WaiverProgram> => {
-  const { waiver_program_id, location_id, name, description, is_active } = data;
+  const { waiver_program_id, location_id, name, code, description, requires_case_manager, is_active } = data;
   
   const payload: Partial<WaiverProgram> = { 
     location_id, 
     name, 
+    code,
     description, 
+    requires_case_manager: !!requires_case_manager,
     is_active: is_active !== false 
   };
   

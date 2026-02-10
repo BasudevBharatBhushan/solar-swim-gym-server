@@ -26,6 +26,7 @@ export const upsertDiscountCode = async (data: Partial<DiscountCode>): Promise<D
     discount_code, 
     discount, 
     staff_name,
+    service_id,
     is_active 
   } = data;
 
@@ -35,6 +36,7 @@ export const upsertDiscountCode = async (data: Partial<DiscountCode>): Promise<D
     discount_code,
     discount,
     staff_name,
+    service_id,
     is_active: is_active !== false,
     updated_at: new Date()
   };

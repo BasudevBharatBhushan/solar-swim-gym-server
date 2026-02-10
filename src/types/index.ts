@@ -75,6 +75,7 @@ export interface WaiverProgram {
   waiver_program_id?: string;
   location_id?: string;
   name: string;
+  code?: string;
   description?: string;
   requires_case_manager?: boolean;
   is_active?: boolean;
@@ -272,6 +273,7 @@ export interface DiscountCode {
   discount_code: string;
   discount: string;
   staff_name?: string | null;
+  service_id?: string | null;
   is_active?: boolean;
   created_at?: Date;
   updated_at?: Date;

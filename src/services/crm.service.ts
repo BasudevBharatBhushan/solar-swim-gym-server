@@ -158,6 +158,53 @@ export const upsertAccount = async (data: UpsertAccountData): Promise<{ account_
   return { account_id: finalAccountId! };
 };
 
+export const getProfile = async (locationId: string, profileId: string): Promise<Profile | null> => {
+    // We join with validation on location_id to ensure tenant isolation
+    const { data, error } = await supabase
+        .from('profile')
+        .select(`
+            *,
+            waiver_program:waiver_program_id (
+                name,
+                code
+            )
+        `)
+        .eq('profile_id', profileId)
+        .eq('location_id', locationId)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') return null; 
+        throw new Error(error.message);
+    }
+    return data as Profile;
+};
+
+// --- ACCOUNTS ---
+export const getAccountById = async (locationId: string, accountId: string): Promise<Account | null> => {
+    const { data, error } = await supabase
+        .from('account')
+        .select(`
+            *,
+            profile:profile (
+                *,
+                waiver_program:waiver_program_id (
+                    name,
+                    code
+                )
+            )
+        `)
+        .eq('account_id', accountId)
+        .eq('location_id', locationId)
+        .single();
+
+    if (error) {
+         if (error.code === 'PGRST116') return null;
+         throw new Error(error.message);
+    }
+    return data as Account;
+};
+
 export const reindexAccounts = async (locationId: string): Promise<void> => {
     const { data: accounts, error } = await supabase
         .from('account')
@@ -177,5 +224,7 @@ export default {
   reindexLeads,
   getAccounts, 
   upsertAccount,
-  reindexAccounts
+  reindexAccounts,
+  getProfile,
+  getAccountById
 };
