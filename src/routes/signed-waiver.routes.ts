@@ -21,4 +21,7 @@ router.post('/upsert', SignedWaiverController.upsertSignedWaiver);
 // Get Signed Waivers by Profile
 router.get('/', SignedWaiverController.getSignedWaivers);
 
+// Link Profile to Signed Waiver
+router.patch('/:signedWaiverId/link-profile', SignedWaiverController.linkProfile);
+
 export default router;

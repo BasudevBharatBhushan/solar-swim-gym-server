@@ -73,6 +73,34 @@ export const upsertSignedWaiver = async (req: Request, res: Response): Promise<v
   }
 };
 
+export const linkProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { signedWaiverId } = req.params;
+    const { profile_id } = req.body;
+    const locationId = req.locationId;
+
+    if (!locationId) {
+      res.status(400).json({ success: false, message: 'Location context missing.' });
+      return;
+    }
+
+    if (!signedWaiverId || typeof signedWaiverId !== 'string' || !profile_id) {
+      res.status(400).json({ success: false, message: 'Valid signedWaiverId and profile_id are required.' });
+      return;
+    }
+
+    const result = await SignedWaiverService.linkProfileToWaiver(signedWaiverId, profile_id, locationId);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('Error linking profile to waiver:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getSignedWaivers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { profile_id } = req.query;
@@ -88,7 +116,7 @@ export const getSignedWaivers = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const waivers = await SignedWaiverService.getSignedWaivers(profile_id, locationId);
+    const waivers = await SignedWaiverService.getSignedWaivers(profile_id as string, locationId);
 
     res.status(200).json({
       success: true,
@@ -103,5 +131,6 @@ export const getSignedWaivers = async (req: Request, res: Response): Promise<voi
 export default {
   uploadSignature,
   upsertSignedWaiver,
+  linkProfile,
   getSignedWaivers
 };

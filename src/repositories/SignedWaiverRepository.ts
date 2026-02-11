@@ -64,7 +64,30 @@ export const getSignedWaiversByProfile = async (profileId: string, locationId: s
   return data || [];
 };
 
+/**
+ * Update only the profile_id for a signed waiver
+ */
+export const updateProfileId = async (signedWaiverId: string, profileId: string, locationId: string): Promise<SignedWaiver> => {
+  const { data, error } = await supabase
+    .from('signed_waiver')
+    .update({ 
+      profile_id: profileId,
+      updated_at: new Date().toISOString()
+    })
+    .eq('signed_waiver_id', signedWaiverId)
+    .eq('location_id', locationId) // Ensure tenant isolation
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
 export default {
   upsertSignedWaiver,
-  getSignedWaiversByProfile
+  getSignedWaiversByProfile,
+  updateProfileId
 };

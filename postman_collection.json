@@ -1842,6 +1842,34 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Link Profile to Signed Waiver",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"profile_id\": \"{{lastProfileId}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/signed-waivers/{{lastSignedWaiverId}}/link-profile",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "signed-waivers",
+                                "{{lastSignedWaiverId}}",
+                                "link-profile"
+                            ]
+                        }
+                    },
+                    "response": []
                 }
             ]
         }

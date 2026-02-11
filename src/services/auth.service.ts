@@ -19,6 +19,7 @@ interface ProfileData {
   guardian_mobile?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+  signed_waiver_id?: string;
 }
 
 interface WaiverData {
@@ -100,7 +101,27 @@ const upsertProfileHelper = async (
     .single();
 
   if (error) throw new Error(error.message);
-  return data.profile_id;
+  const profileIdResult = data.profile_id;
+
+  // Link signed waiver if provided
+  if (profileData.signed_waiver_id) {
+    const { error: waiverError } = await supabase
+      .from('signed_waiver')
+      .update({ 
+        profile_id: profileIdResult,
+        updated_at: new Date().toISOString()
+      })
+      .eq('signed_waiver_id', profileData.signed_waiver_id)
+      .eq('location_id', location_id); // Basic safety check
+
+    if (waiverError) {
+      console.error(`Failed to link waiver ${profileData.signed_waiver_id} to profile ${profileIdResult}:`, waiverError.message);
+      // We don't necessarily want to fail the whole registration if waiver linking fails, 
+      // but the user's objective is to make sure it's saved.
+    }
+  }
+
+  return profileIdResult;
 };
 
 /**

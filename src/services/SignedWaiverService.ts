@@ -43,8 +43,13 @@ export const getSignedWaivers = async (profileId: string, locationId: string): P
   return await SignedWaiverRepository.getSignedWaiversByProfile(profileId, locationId);
 };
 
+export const linkProfileToWaiver = async (signedWaiverId: string, profileId: string, locationId: string): Promise<SignedWaiver> => {
+  return await SignedWaiverRepository.updateProfileId(signedWaiverId, profileId, locationId);
+};
+
 export default {
   uploadSignature,
   upsertSignedWaiver,
-  getSignedWaivers
+  getSignedWaivers,
+  linkProfileToWaiver
 };
