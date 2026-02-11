@@ -37,6 +37,7 @@ export interface Staff {
   is_active?: boolean;
   created_at?: Date;
   updated_at?: Date;
+  location?: Location;
 }
 
 export interface LoginCredentials {
@@ -56,6 +57,8 @@ export interface AgeGroup {
   min_age: number;
   max_age: number;
   accept_guardian_information?: boolean;
+  is_recurring?: boolean;
+  recurrence_unit?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -83,6 +86,17 @@ export interface WaiverProgram {
   updated_at?: Date;
 }
 
+export interface ActivationToken {
+  token_id?: string;
+  account_id?: string;
+  staff_id?: string;
+  is_staff?: boolean;
+  token: string;
+  expires_at: Date | string;
+  is_used?: boolean;
+  created_at?: Date;
+}
+
 // Service Types
 export interface Service {
   service_id?: string;
@@ -93,6 +107,7 @@ export interface Service {
   is_addon_only?: boolean;
   is_active?: boolean;
   image_url?: string;
+  LessonRegistrationFee?: number;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -105,6 +120,7 @@ export interface ServicePack {
   classes?: number;
   duration_days?: number;
   duration_months?: number;
+  is_waiver_free_allowed?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -292,4 +308,30 @@ export interface EmailConfig {
   is_active?: boolean;
   created_at?: Date;
   updated_at?: Date;
+}
+export interface WaiverTemplate {
+  waiver_template_id?: string;
+  location_id: string;
+  ageprofile_id?: string | null;
+  subterm_id?: string | null;
+  base_price_id?: string | null;
+  membership_category_id?: string | null;
+  service_id?: string | null;
+  content: string;
+  is_active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface SignedWaiver {
+  signed_waiver_id?: string;
+  profile_id?: string | null;
+  waiver_template_id: string;
+  waiver_type: string;
+  content: string;
+  signature_url: string;
+  signed_at?: Date | string;
+  location_id: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
 }

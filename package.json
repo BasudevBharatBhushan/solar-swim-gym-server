@@ -15,6 +15,7 @@
     "test:watch": "nodemon --watch src --ext ts --exec npm run test",
     "cleardb": "ts-node src/scripts/cleardb.ts",
     "seed-staff": "ts-node src/scripts/seed-staff.ts",
+    "seed-leads": "ts-node src/scripts/seed-leads.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },
@@ -31,6 +32,7 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
+    "nodemailer": "^8.0.1",
     "pg": "^8.18.0"
   },
   "devDependencies": {
@@ -41,6 +43,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.2.0",
+    "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "eslint": "^9.39.2",
     "globals": "^17.3.0",

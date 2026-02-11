@@ -13,8 +13,24 @@ export const getAgeGroups = async (): Promise<AgeGroup[]> => {
 };
 
 export const upsertAgeGroup = async (data: AgeGroup): Promise<AgeGroup> => {
-  const { age_group_id, name, min_age, max_age } = data;
-  const payload: Partial<AgeGroup> = { name, min_age, max_age };
+  const { 
+    age_group_id, 
+    name, 
+    min_age, 
+    max_age, 
+    accept_guardian_information,
+    is_recurring,
+    recurrence_unit 
+  } = data;
+  
+  const payload: Partial<AgeGroup> = { 
+    name, 
+    min_age, 
+    max_age,
+    accept_guardian_information: !!accept_guardian_information,
+    is_recurring: !!is_recurring,
+    recurrence_unit: recurrence_unit || 'MONTH'
+  };
   
   if (age_group_id) {
     payload.age_group_id = age_group_id;

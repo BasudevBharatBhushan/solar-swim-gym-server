@@ -15,9 +15,10 @@ async function clearDatabase() {
     'membership_program',
     'service_price',
     'base_price',
-    'email_smtp_config',
+    // 'email_smtp_config',
     'discount_codes',
     'service',
+    'service_pack',
     'leads',
     'account_activation_tokens',
     'profile',
@@ -57,6 +58,7 @@ async function clearDatabase() {
       'payment': 'payment_id',
       'invoice': 'invoice_id',
       'location': 'location_id'
+      
     };
 
     const idColumn = idMap[table] || 'created_at';

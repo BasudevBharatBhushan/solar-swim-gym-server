@@ -12,6 +12,8 @@ import membershipServiceRoutes from './membership-service.routes';
 import emailConfigRoutes from './emailConfig.routes';
 import servicePackRoutes from './service-pack.routes';
 import sessionRoutes from './session.routes';
+import waiverTemplateRoutes from './waiver-template.routes';
+import signedWaiverRoutes from './signed-waiver.routes';
 
 
 const router = Router();
@@ -28,6 +30,8 @@ router.use('/billing', billingRoutes);
 router.use('/discounts', discountRoutes);
 router.use('/service-packs', servicePackRoutes);
 router.use('/sessions', sessionRoutes);
+router.use('/waiver-templates', waiverTemplateRoutes);
+router.use('/signed-waivers', signedWaiverRoutes);
 
 router.use('/', crmRoutes); // Exposes /leads, /accounts directly
 

@@ -2,6 +2,7 @@ import supabase from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Staff, AuthResponse, Profile } from '../types';
+import { sendEmail } from './email.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_123';
 
@@ -32,7 +33,7 @@ interface WaiverData {
 export const staffLogin = async (email: string, password: string): Promise<AuthResponse> => {
   const { data: staff, error } = await supabase
     .from('staff')
-    .select('*')
+    .select('*, location(*)')
     .eq('email', email)
     .single();
 
@@ -190,6 +191,7 @@ export const activateAccount = async (
     .select('*, account!inner(account_id, location_id)')
     .eq('token', token)
     .eq('is_used', false)
+    .eq('is_staff', false)
     .single();
 
   if (tokenError || !tokenData) {
@@ -245,6 +247,7 @@ export const validateActivationToken = async (
     .select('*, account!inner(account_id, location_id)')
     .eq('token', token)
     .eq('is_used', false)
+    .eq('is_staff', false)
     .single();
 
   if (tokenError || !tokenData) {
@@ -281,7 +284,7 @@ export const validateActivationToken = async (
 export const accountLogin = async (email: string, password: string): Promise<AuthResponse> => {
   const { data: profile, error } = await supabase
     .from('profile')
-    .select('*, account!inner(account_id, location_id, status)')
+    .select('*, account!inner(account_id, location_id, status, location(*))')
     .eq('email', email)
     .eq('is_primary', true)
     .single();
@@ -320,9 +323,97 @@ export const accountLogin = async (email: string, password: string): Promise<Aut
 
   const { password: _, ...profileWithoutPassword } = profile;
 
+  // Flatten location from account to profile root for consistency
+  const location = (profile.account as any).location;
+  const profileWithLocation = { ...profileWithoutPassword, location };
+
   return { 
     token, 
-    staff: profileWithoutPassword as unknown as Staff
+    staff: profileWithLocation as unknown as Staff
+  };
+};
+
+/**
+ * Activate staff account and set password
+ */
+export const activateStaff = async (
+  token: string,
+  password: string
+): Promise<{ success: boolean; message: string }> => {
+  const { data: tokenData, error: tokenError } = await supabase
+    .from('account_activation_tokens')
+    .select('*, staff!inner(staff_id, email)')
+    .eq('token', token)
+    .eq('is_used', false)
+    .eq('is_staff', true)
+    .single();
+
+  if (tokenError || !tokenData) {
+    throw new Error('Invalid or expired activation token');
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(tokenData.expires_at);
+  if (now > expiresAt) {
+    throw new Error('Activation token has expired');
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const { error: updateError } = await supabase
+    .from('staff')
+    .update({ 
+      password_hash: passwordHash,
+      is_active: true 
+    })
+    .eq('staff_id', tokenData.staff_id);
+
+  if (updateError) {
+    throw new Error('Failed to set password: ' + updateError.message);
+  }
+
+  await supabase
+    .from('account_activation_tokens')
+    .update({ is_used: true })
+    .eq('token_id', tokenData.token_id);
+
+  return {
+    success: true,
+    message: 'Staff account activated successfully'
+  };
+};
+
+/**
+ * Validate staff activation token
+ */
+export const validateStaffToken = async (
+  token: string
+): Promise<{ success: boolean; message: string; staff?: { staff_id: string; email: string } }> => {
+  const { data: tokenData, error: tokenError } = await supabase
+    .from('account_activation_tokens')
+    .select('*, staff!inner(staff_id, email)')
+    .eq('token', token)
+    .eq('is_used', false)
+    .eq('is_staff', true)
+    .single();
+
+  if (tokenError || !tokenData) {
+    throw new Error('Invalid or expired activation token');
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(tokenData.expires_at);
+  if (now > expiresAt) {
+    throw new Error('Activation token has expired');
+  }
+
+  return {
+    success: true,
+    message: 'Token is valid',
+    staff: {
+      staff_id: tokenData.staff_id,
+      email: (tokenData.staff as any).email
+    }
   };
 };
 
@@ -358,17 +449,20 @@ export const getActivationToken = async (email: string): Promise<{ token: string
 };
 
 /**
- * Create Staff (SuperAdmin/Admin only)
+ * Create Staff (SuperAdmin/Admin/Staff only)
  */
 export const createStaff = async (staffData: {
   location_id: string | null;
   first_name: string;
   last_name: string;
   email: string;
-  password: string;
+  password?: string;
   role: 'SUPERADMIN' | 'ADMIN' | 'STAFF';
 }): Promise<Staff> => {
-  const passwordHash = await bcrypt.hash(staffData.password, 10);
+  let passwordHash = null;
+  if (staffData.password) {
+    passwordHash = await bcrypt.hash(staffData.password, 10);
+  }
 
   const { data, error } = await supabase
     .from('staff')
@@ -379,7 +473,7 @@ export const createStaff = async (staffData: {
       email: staffData.email,
       password_hash: passwordHash,
       role: staffData.role,
-      is_active: true
+      is_active: staffData.password ? true : false // If no password, set to inactive until activation
     })
     .select()
     .single();
@@ -390,6 +484,113 @@ export const createStaff = async (staffData: {
 
   const { password_hash: _, ...staffWithoutPassword } = data;
   return staffWithoutPassword as Staff;
+};
+
+/**
+ * Upsert Staff (SuperAdmin/Admin/Staff only)
+ */
+export const upsertStaff = async (staffData: Partial<Staff> & { password?: string }): Promise<Staff> => {
+  const payload: any = { ...staffData };
+  delete payload.password; // Don't include raw password in payload
+
+  if (staffData.password) {
+    payload.password_hash = await bcrypt.hash(staffData.password, 10);
+    // If password is set, we can activate immediately or keep current state
+    if (!staffData.staff_id) payload.is_active = true;
+  } else if (!staffData.staff_id) {
+    // New staff without password should be inactive until activation
+    payload.is_active = false;
+  }
+
+  const { data, error } = await supabase
+    .from('staff')
+    .upsert(payload, { onConflict: 'staff_id' })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error('Failed to upsert staff: ' + error.message);
+  }
+
+  const { password_hash: _, ...staffWithoutPassword } = data;
+  return staffWithoutPassword as Staff;
+};
+
+/**
+ * Send Staff Password Reset Link
+ */
+export const sendStaffResetLink = async (staffId: string): Promise<{ success: boolean; message: string }> => {
+  // 1. Get staff details
+  const { data: staff, error } = await supabase
+    .from('staff')
+    .select('*')
+    .eq('staff_id', staffId)
+    .single();
+
+  if (error || !staff) {
+    throw new Error('Staff not found');
+  }
+
+  // 2. Invalidate existing tokens
+  await supabase
+    .from('account_activation_tokens')
+    .update({ is_used: true })
+    .eq('staff_id', staffId)
+    .eq('is_used', false);
+
+  // 3. Create new token
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour validity
+
+  const { data: tokenData, error: tokenError } = await supabase
+    .from('account_activation_tokens')
+    .insert({
+      staff_id: staffId,
+      is_staff: true,
+      expires_at: expiresAt.toISOString(),
+      is_used: false
+    })
+    .select()
+    .single();
+
+  if (tokenError || !tokenData) {
+    throw new Error('Failed to generate reset token');
+  }
+
+  // 4. Send Email
+  // Note: Using a robust frontend URL construction. 
+  // Ideally this base URL should come from env vars.
+  const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000'; 
+  const activationLink = `${baseUrl}/admin/activate?token=${tokenData.token}`;
+
+  try {
+    await sendEmail({
+      to: staff.email,
+      subject: 'Complete Your Staff Account Setup / Reset Password',
+      html: `
+        <h2>Hello ${staff.first_name},</h2>
+        <p>An administrator has requested a password reset or account activation for your staff account.</p>
+        <p>Please click the link below to set your password:</p>
+        <a href="${activationLink}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Set Password</a>
+        <p>Or copy and paste this link:</p>
+        <p>${activationLink}</p>
+        <p>This link expires in 24 hours.</p>
+      `,
+      text: `Hello ${staff.first_name},\n\nPlease set your password by visiting: ${activationLink}`,
+      location_id: staff.location_id
+    });
+  } catch (emailError: any) {
+    // If email fails, we might still want to return success but warn, OR fail. 
+    // Since this is a direct action "Send Link", we should probably report failure if email fails.
+    // However, token is created.
+    console.error('Failed to send email:', emailError);
+    throw new Error(`Token generated but email failed: ${emailError.message}`);
+  }
+
+  return { 
+    success: true, 
+    message: `Reset link sent to ${staff.email}` 
+  };
 };
 
 /**
@@ -414,7 +615,11 @@ export default {
   registerUser,
   activateAccount,
   validateActivationToken,
+  activateStaff,
+  validateStaffToken,
   getActivationToken,
   createStaff,
+  upsertStaff,
+  sendStaffResetLink,
   getAllStaff
 };

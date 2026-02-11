@@ -139,7 +139,7 @@ export const getActivationToken = async (req: Request, res: Response): Promise<v
 };
 
 /**
- * Create Staff (Admin/SuperAdmin only)
+ * Create Staff (Staff/Admin/SuperAdmin only)
  */
 export const createStaff = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -167,6 +167,19 @@ export const createStaff = async (req: Request, res: Response): Promise<void> =>
 };
 
 /**
+ * Upsert Staff (Staff/Admin/SuperAdmin only)
+ */
+export const upsertStaff = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await authService.upsertStaff(req.body);
+    res.status(200).json(result);
+  } catch (err: unknown) {
+    console.error('Error in upsertStaff:', err);
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
+/**
  * Get all staff (SuperAdmin only)
  */
 export const getAllStaff = async (_req: Request, res: Response): Promise<void> => {
@@ -179,6 +192,71 @@ export const getAllStaff = async (_req: Request, res: Response): Promise<void> =
   }
 };
 
+/**
+ * Activate Admin/Staff Account (Set Password)
+ */
+export const activateAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      res.status(400).json({ error: 'Token and password are required' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: 'Password must be at least 8 characters long' });
+      return;
+    }
+
+    const result = await authService.activateStaff(token, password);
+    res.json(result);
+  } catch (err: unknown) {
+    console.error('Error in activateAdmin:', err);
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
+/**
+ * Validate Admin/Staff Activation Token (GET route)
+ */
+export const validateAdminToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      res.status(400).json({ error: 'Token is required' });
+      return;
+    }
+
+    const result = await authService.validateStaffToken(token as string);
+    res.json(result);
+  } catch (err: unknown) {
+    console.error('Error in validateAdminToken:', err);
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
+/**
+ * Send Staff Reset Link (Staff/Admin only)
+ */
+export const sendStaffResetLink = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { staff_id } = req.body;
+
+    if (!staff_id) {
+      res.status(400).json({ error: 'staff_id is required' });
+      return;
+    }
+
+    const result = await authService.sendStaffResetLink(staff_id);
+    res.json(result);
+  } catch (err: unknown) {
+    console.error('Error in sendStaffResetLink:', err);
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+};
+
 export default {
   staffLogin,
   registerUser,
@@ -187,7 +265,11 @@ export default {
   accountLogin,
   getActivationToken,
   createStaff,
-  getAllStaff
+  upsertStaff,
+  getAllStaff,
+  activateAdmin,
+  validateAdminToken,
+  sendStaffResetLink
 };
 
 

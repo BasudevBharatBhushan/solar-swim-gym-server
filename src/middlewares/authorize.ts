@@ -79,7 +79,7 @@ export const requireSuperAdmin = requireRole('SUPERADMIN');
 /**
  * Middleware to check if user is Admin or SuperAdmin
  */
-export const requireAdmin = requireRole('SUPERADMIN', 'ADMIN');
+export const requireAdmin = requireRole('SUPERADMIN', 'ADMIN', 'STAFF');
 
 /**
  * Middleware to check if user is Staff (any staff role) or SuperAdmin

@@ -30,6 +30,7 @@ interface UpsertServiceData {
   is_addon_only?: boolean;
   is_active?: boolean;
   image_url?: string;
+  LessonRegistrationFee?: number;
 }
 
 export const upsertService = async (data: UpsertServiceData): Promise<Service | undefined> => {
@@ -40,7 +41,8 @@ export const upsertService = async (data: UpsertServiceData): Promise<Service | 
     const servicePayload: Partial<Service> = { 
        location_id, name, description, 
        is_addon_only: is_addon_only || false,
-       is_active: is_active !== undefined ? is_active : true
+       is_active: is_active !== undefined ? is_active : true,
+       LessonRegistrationFee: data.LessonRegistrationFee !== undefined ? data.LessonRegistrationFee : 0
     };
 
     if (image_url) {

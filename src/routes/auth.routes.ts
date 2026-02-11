@@ -8,7 +8,13 @@ const router = Router();
 // Staff Authentication
 router.post('/staff/login', authController.staffLogin);
 router.post('/staff/create', authenticateToken, requireAdmin, authController.createStaff);
+router.post('/staff/upsert', authenticateToken, requireAdmin, authController.upsertStaff);
+router.post('/staff/reset-password', authenticateToken, requireAdmin, authController.sendStaffResetLink);
 router.get('/staff/all', authenticateToken, requireSuperAdmin, authController.getAllStaff);
+
+// Admin Activation/Password Reset
+router.get('/admin/activate', authController.validateAdminToken);
+router.post('/admin/activate', authController.activateAdmin);
 
 // User/Account Authentication
 router.post('/user/register', authController.registerUser);
