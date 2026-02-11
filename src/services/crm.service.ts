@@ -51,6 +51,9 @@ export const upsertLead = async (data: UpsertLeadData): Promise<Lead> => {
 };
 
 export const reindexLeads = async (locationId: string): Promise<void> => {
+  // Clear existing leads for this location first
+  await elasticService.deleteLeadsByLocation(locationId);
+
   const { data: leads, error } = await supabase
     .from('leads')
     .select('*')
@@ -226,6 +229,9 @@ export const getAccountById = async (locationId: string, accountId: string): Pro
 };
 
 export const reindexAccounts = async (locationId: string): Promise<void> => {
+    // Clear existing accounts for this location first
+    await elasticService.deleteAccountsByLocation(locationId);
+
     const { data: accounts, error } = await supabase
         .from('account')
         .select('account_id')

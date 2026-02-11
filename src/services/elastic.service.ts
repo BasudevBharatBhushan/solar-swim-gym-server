@@ -66,6 +66,34 @@ export const indexAccount = async (accountId: string) => {
   }
 };
 
+export const deleteLeadsByLocation = async (locationId: string) => {
+  try {
+    await client.deleteByQuery({
+      index: 'leads',
+      query: {
+        term: { location_id: locationId }
+      },
+      refresh: true
+    });
+  } catch (error) {
+    console.error('Elasticsearch Delete Error (Leads by Location):', error);
+  }
+};
+
+export const deleteAccountsByLocation = async (locationId: string) => {
+  try {
+    await client.deleteByQuery({
+      index: 'accounts',
+      query: {
+        term: { location_id: locationId }
+      },
+      refresh: true
+    });
+  } catch (error) {
+    console.error('Elasticsearch Delete Error (Accounts by Location):', error);
+  }
+};
+
 export const searchLeads = async (
   locationId: string,
   query: string,
@@ -209,6 +237,8 @@ export const clearIndices = async () => {
 export default {
   indexLead,
   indexAccount,
+  deleteLeadsByLocation,
+  deleteAccountsByLocation,
   searchLeads,
   searchAccounts,
   clearIndices
