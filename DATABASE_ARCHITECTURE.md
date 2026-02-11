@@ -443,6 +443,7 @@ Billing duration definitions.
 | `duration_months` | `INT` | Length in months. | Default: `1`, `NOT NULL` |
 | `payment_mode` | `ENUM` | `PAY_IN_FULL`, `RECURRING` | Default: `RECURRING`, `NOT NULL` |
 | `recurrence_unit` | `TEXT` | Period unit (e.g., "MONTH", "YEAR"). | Default: `'MONTH'` |
+| `recurrence_unit_value`| `INT` | The value for the recurrence unit (e.g., 1, 3, 6). | Default: `1` |
 | `is_active` | `BOOLEAN` | Availability flag. | Default: `TRUE` |
 
 **RLS Policy**: Filter by `location_id`.
@@ -483,6 +484,24 @@ Stored signed waivers linked to profiles.
 | `location_id` | `UUID` | Location scope. | **FK** -> `location`, `NOT NULL` |
 | `created_at` | `TIMESTAMPTZ` | Record creation. | Default: `now()` |
 | `updated_at` | `TIMESTAMPTZ` | Record update. | Default: `now()` |
+
+**RLS Policy**: Filter by `location_id`.
+
+---
+## **8. Utility & Configuration**
+
+### **Table: `dropdown_values`**
+Stores configurable dropdown values for various modules.
+
+| Field Name | Type | Description | Key / Constraint |
+| :--- | :--- | :--- | :--- |
+| `dropdown_id` | `UUID` | Unique identifier. | **PK**, Default: `gen_random_uuid()` |
+| `location_id` | `UUID` | Location scope. | **FK** -> `location`, `NOT NULL` |
+| `module` | `TEXT` | Module name (e.g., "Services"). | `NOT NULL` |
+| `label` | `TEXT` | Field label (e.g., "Category"). | `NOT NULL` |
+| `value` | `TEXT` | The value (e.g., "Training"). | `NOT NULL` |
+| `created_at` | `TIMESTAMPTZ`| Record creation timestamp. | Default: `now()` |
+| `updated_at` | `TIMESTAMPTZ`| Record update timestamp. | Default: `now()` |
 
 **RLS Policy**: Filter by `location_id`.
 

@@ -63,13 +63,24 @@ export const getTerms = async (locationId?: string): Promise<SubscriptionTerm[]>
 };
 
 export const upsertTerm = async (data: SubscriptionTerm): Promise<SubscriptionTerm> => {
-  const { subscription_term_id, location_id, name, duration_months, payment_mode, is_active } = data;
+  const { 
+    subscription_term_id, 
+    location_id, 
+    name, 
+    duration_months, 
+    payment_mode, 
+    recurrence_unit,
+    recurrence_unit_value,
+    is_active 
+  } = data;
   
   const payload: Partial<SubscriptionTerm> = { 
     location_id, 
     name, 
     duration_months, 
     payment_mode: payment_mode || 'RECURRING',
+    recurrence_unit: recurrence_unit || 'MONTH',
+    recurrence_unit_value: recurrence_unit_value || 1,
     is_active: is_active !== false 
   };
   

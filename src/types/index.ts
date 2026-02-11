@@ -69,6 +69,8 @@ export interface SubscriptionTerm {
   name: string;
   duration_months: number;
   payment_mode?: 'PAY_IN_FULL' | 'RECURRING';
+  recurrence_unit?: string;
+  recurrence_unit_value?: number;
   is_active?: boolean;
   created_at?: Date;
   updated_at?: Date;
@@ -332,6 +334,16 @@ export interface SignedWaiver {
   signature_url: string;
   signed_at?: Date | string;
   location_id: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+}
+
+export interface DropdownValue {
+  dropdown_id?: string;
+  location_id: string;
+  module: string;
+  label: string;
+  value: string;
   created_at?: Date | string;
   updated_at?: Date | string;
 }

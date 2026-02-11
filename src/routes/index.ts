@@ -14,6 +14,7 @@ import servicePackRoutes from './service-pack.routes';
 import sessionRoutes from './session.routes';
 import waiverTemplateRoutes from './waiver-template.routes';
 import signedWaiverRoutes from './signed-waiver.routes';
+import dropdownValueRoutes from './dropdownValue.routes';
 
 
 const router = Router();
@@ -32,6 +33,7 @@ router.use('/service-packs', servicePackRoutes);
 router.use('/sessions', sessionRoutes);
 router.use('/waiver-templates', waiverTemplateRoutes);
 router.use('/signed-waivers', signedWaiverRoutes);
+router.use('/dropdown-values', dropdownValueRoutes);
 
 router.use('/', crmRoutes); // Exposes /leads, /accounts directly
 

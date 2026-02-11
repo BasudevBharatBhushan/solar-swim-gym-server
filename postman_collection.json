@@ -531,7 +531,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Monthly\",\n    \"duration_months\": 1,\n    \"payment_mode\": \"RECURRING\"\n}",
+                            "raw": "{\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Monthly\",\n    \"duration_months\": 1,\n    \"payment_mode\": \"RECURRING\",\n    \"recurrence_unit\": \"MONTH\",\n    \"recurrence_unit_value\": 1\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -585,7 +585,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"subscription_term_id\": \"{{lastTermId}}\",\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Monthly Updated\",\n    \"duration_months\": 1,\n    \"payment_mode\": \"RECURRING\"\n}",
+                            "raw": "{\n    \"subscription_term_id\": \"{{lastTermId}}\",\n    \"location_id\": \"{{lastLocationId}}\",\n    \"name\": \"Monthly Updated\",\n    \"duration_months\": 1,\n    \"payment_mode\": \"RECURRING\",\n    \"recurrence_unit\": \"MONTH\",\n    \"recurrence_unit_value\": 1\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -682,6 +682,140 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Dropdown Values",
+                    "item": [
+                        {
+                            "name": "Get All Dropdown Values",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "x-location-id",
+                                        "value": "{{lastLocationId}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/dropdown-values",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "dropdown-values"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Filtered Dropdown Values",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "x-location-id",
+                                        "value": "{{lastLocationId}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/dropdown-values?module=Services&label=Category",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "dropdown-values"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "module",
+                                            "value": "Services"
+                                        },
+                                        {
+                                            "key": "label",
+                                            "value": "Category"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Upsert Dropdown Value",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "x-location-id",
+                                        "value": "{{lastLocationId}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"module\": \"Services\",\n    \"label\": \"Category\",\n    \"value\": \"Training\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/dropdown-values/upsert",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "dropdown-values",
+                                        "upsert"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Delete Dropdown Value",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "x-location-id",
+                                        "value": "{{lastLocationId}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/dropdown-values/:id",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "dropdown-values",
+                                        ":id"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "{{lastDropdownId}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
                 }
             ]
         },
